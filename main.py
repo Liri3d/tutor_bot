@@ -38,7 +38,7 @@ async def cmd_help(message: types.Message):
 
 
 
-@dp.message(Command("help"))
+@dp.message(Command("hi"))
 async def cmd_help(message: types.Message):
     
     text = "Приветствую))"
