@@ -36,6 +36,16 @@ async def cmd_help(message: types.Message):
         text = "**Команды ученика:**\n/slots - свободные уроки\n/book - записаться"
     await message.answer(text, parse_mode="Markdown")
 
+
+
+@dp.message(Command("help"))
+async def cmd_help(message: types.Message):
+    
+    text = "Приветствую))"
+    await message.answer(text, parse_mode="Markdown")
+
+
+
 @dp.message()
 async def unknown(message: types.Message):
     await message.answer("Я не знаю такой команды.")
