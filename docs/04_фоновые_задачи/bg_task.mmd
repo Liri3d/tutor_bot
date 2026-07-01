@@ -13,7 +13,8 @@ graph TD
             H4 -- Нет --> H6_check{Попыток < 3?}
             H6_check -- Да --> H6[increment attempts, notified = false]
             H6_check -- Нет (3 попытки) --> H6_fail[notified = true, status = 'failed_to_notify']
-            H6_fail --> H6_log[Записать: уведомление не доставлено]
+            H6_fail --> H6_fail_alt[Отправить уведомление репетитору: Не удалось уведомить ученика о занятии]
+            H6_fail_alt --> H6_log[Записать: уведомление не доставлено ученику]
             
     M[Раз в час] --> M1[Найти все занятия со статусом scheduled]
     M1 --> M2{Для каждого: datetime окончания > now?}
