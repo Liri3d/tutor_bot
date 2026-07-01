@@ -6,13 +6,15 @@ graph TD
     H[Каждую минуту] --> H1[Запрос к БД: SELECT * FROM lessons WHERE start_time BETWEEN NOW AND NOW + 31 min AND status = 'scheduled' AND notified = false]
     H1 --> H2{Есть такие занятия?}
         H2 -- Да --> H3[Для каждого: отправить напоминание ученику]
-            H3 --> H4{Успешно отправлено?}
-                H4 -- Да --> H5[Пометить notified = true]
-                H4 -- Нет (ошибка API) --> H6[Записать ошибку в лог, notified оставить false]
-                    H6 --> H7[Повторить в следующем цикле]
-                    H5 --> H8[Завершить]
-        H2 -- Нет --> H8
+            
+        H3[Для каждого: отправить напоминание] --> H4{Успешно отправлено?}
+            H4 -- Да --> H5[notified = true]
 
+            H4 -- Нет --> H6_check{Попыток < 3?}
+            H6_check -- Да --> H6[increment attempts, notified = false]
+            H6_check -- Нет (3 попытки) --> H6_fail[notified = true, status = 'failed_to_notify']
+            H6_fail --> H6_log[Записать: уведомление не доставлено]
+            
     M[Раз в час] --> M1[Найти все занятия со статусом scheduled]
     M1 --> M2{Для каждого: datetime окончания > now?}
     M2 -- Да --> M3[Проверить: есть ли отметка о проведении?]
