@@ -34,7 +34,11 @@ graph TD
         F3d3_check -- Нет --> F3d3_error[Ошибка: Диапазон 10-180]
         F3d3_error --> F3d3
         
-        F3d3_check -- Да --> F3d{Проверка: есть ли занятия, где start_time <= new_start_time + duration И end_time >= new_start_time}
+        F3d3_check -- Да --> F3d_time_check{start_time + duration <= 23:59}
+        F3d_time_check -- Нет --> F3d_time_error[Ошибка: Занятие выходит за пределы дня. Укажите более раннее время или меньшую длительность]
+        F3d_time_error --> F3d2
+
+        F3d_time_check -- Да --> F3d{Проверка: есть ли занятия, где start_time <= new_start_time + duration И end_time >= new_start_time}
         
         F3d -- Да --> F3e[Ошибка: Время пересекается с уже запланированным занятием]
         F3e --> F3d2
