@@ -2,8 +2,8 @@ import asyncio
 import uvicorn
 from threading import Thread
 
-import main as bot_main
-from tutor_bot.api.main import app
+from main import main as bot_main
+from api.main import app
 
 
 def run_bot():

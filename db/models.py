@@ -144,10 +144,11 @@ class Relationship(Base):
     )
     
     __table_args__ = (
-        # Защита от дублирования активной связи
-        UniqueConstraint(
+        # Защита от дублирования активной связи через уникальный индекс с условием
+        Index(
+            'idx_relationships_unique_active',
             'tutor_id', 'student_id',
-            name='uq_relationships_active',
+            unique=True,
             postgresql_where=text("status = 'active'")
         ),
         Index('idx_relationships_tutor_student', 'tutor_id', 'student_id'),

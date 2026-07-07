@@ -1,22 +1,18 @@
-"""Telegram bot entrypoint.
-
-This module is imported by tutor_bot/run.py.
-
-It wires up aiogram Dispatcher and registers handlers from handlers/*.
-"""
+"""Telegram bot entrypoint."""
 
 import logging
+import asyncio
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.default import DefaultBotProperties
 
 from config import config
-
-from .handlers import common as common_handlers
-from .handlers import tutor as tutor_handlers
-from .handlers import student as student_handlers
-
+from db import init_db, close_db
+from handlers.common import cmd_start, handle_role_tutor, handle_role_student
+from handlers.tutor import router as tutor_router
+from handlers.student import router as student_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,24 +21,30 @@ logger = logging.getLogger(__name__)
 
 async def main() -> None:
     """Start bot + register handlers."""
-    bot = Bot(token=config.BOT_TOKEN, parse_mode=ParseMode.HTML)
+    # Инициализация БД
+    await init_db()
+    
+    # Создаем бота с новым синтаксисом
+    bot = Bot(
+        token=config.BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
     dp = Dispatcher(storage=MemoryStorage())
 
-    # Expose dp to handler modules that use @dp decorators
-    # (tutor.py/student.py/common.py were written with global dp usage).
-    tutor_handlers.dp = dp
-    student_handlers.dp = dp
-    common_handlers.dp = dp
+    # Регистрируем команду /start
+    dp.message.register(cmd_start)
+    
+    # Регистрируем callback'и для выбора роли
+    dp.callback_query.register(handle_role_tutor, lambda c: c.data == "role_tutor")
+    dp.callback_query.register(handle_role_student, lambda c: c.data == "role_student")
 
-    # Register handlers for /start and role selection
-    dp.message.register(common_handlers.cmd_start)
-    dp.callback_query.register(common_handlers.ask_role)  # no-op; kept for safety
+    # Подключаем роутеры
+    dp.include_router(tutor_router)
+    dp.include_router(student_router)
 
-    # role callbacks
-    dp.callback_query.register(common_handlers.handle_role_tutor, lambda c: c.data == "role_tutor")
-    dp.callback_query.register(common_handlers.handle_role_student, lambda c: c.data == "role_student")
-
-    # Load other callback handlers (decorated in tutor.py/student.py)
-    # No explicit registration needed if decorators were attached to dp correctly above.
+    logger.info("🚀 Бот запущен!")
     await dp.start_polling(bot)
 
+
+if __name__ == "__main__":
+    asyncio.run(main())

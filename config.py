@@ -9,12 +9,11 @@ class Config:
     
     # Telegram
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-    TUTOR_TELEGRAM_ID: int = int(os.getenv("TUTOR_TELEGRAM_ID", 0))
     
     # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/tutor_bot"
+        "sqlite+aiosqlite:///./tutor_bot.db"
     )
     
     # Настройки
@@ -28,8 +27,6 @@ class Config:
         """Проверка обязательных настроек"""
         if not cls.BOT_TOKEN:
             raise ValueError("BOT_TOKEN не найден в .env файле!")
-        if cls.TUTOR_TELEGRAM_ID == 0:
-            raise ValueError("TUTOR_TELEGRAM_ID не найден в .env файле!")
 
 
 # Создаём экземпляр конфига

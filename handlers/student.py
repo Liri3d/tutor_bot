@@ -1,12 +1,15 @@
-from aiogram import types
+from aiogram import types, Router
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from datetime import datetime, timedelta
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from datetime import datetime
 from sqlalchemy import select, and_
 
 from db import get_session
 from db.crud import get_user_by_telegram_id
 from db.models import User, Relationship, Lesson
 
+# Создаем роутер
+router = Router()
 
 async def show_student_menu(message: types.Message, user: User):
     """Показать главное меню ученика"""
@@ -41,7 +44,7 @@ async def show_student_menu(message: types.Message, user: User):
     await message.answer(text, reply_markup=keyboard)
 
 
-@dp.callback_query(lambda c: c.data == "student_lessons")
+@router.callback_query(lambda c: c.data == "student_lessons")
 async def callback_student_lessons(callback: types.CallbackQuery):
     """Показать занятия ученика"""
     await callback.answer()
@@ -140,7 +143,7 @@ async def callback_student_lessons(callback: types.CallbackQuery):
         )
 
 
-@dp.callback_query(lambda c: c.data.startswith("lesson_cancel_"))
+@router.callback_query(lambda c: c.data.startswith("lesson_cancel_"))
 async def callback_lesson_cancel(callback: types.CallbackQuery):
     """Отмена занятия учеником"""
     await callback.answer()
@@ -221,7 +224,7 @@ async def callback_lesson_cancel(callback: types.CallbackQuery):
             await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
 
-@dp.callback_query(lambda c: c.data.startswith("lesson_cancel_confirm_"))
+@router.callback_query(lambda c: c.data.startswith("lesson_cancel_confirm_"))
 async def callback_lesson_cancel_confirm(callback: types.CallbackQuery):
     """Подтверждение отмены занятия со списанием"""
     await callback.answer()
@@ -268,7 +271,7 @@ async def callback_lesson_cancel_confirm(callback: types.CallbackQuery):
             await callback.message.edit_text("❌ Произошла ошибка при отмене занятия.")
 
 
-@dp.callback_query(lambda c: c.data == "student_balance")
+@router.callback_query(lambda c: c.data == "student_balance")
 async def callback_student_balance(callback: types.CallbackQuery):
     """Показать баланс занятий ученика"""
     await callback.answer()
@@ -347,7 +350,7 @@ async def callback_student_balance(callback: types.CallbackQuery):
         await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
 
-@dp.callback_query(lambda c: c.data == "student_tutor")
+@router.callback_query(lambda c: c.data == "student_tutor")
 async def callback_student_tutor(callback: types.CallbackQuery):
     """Показать информацию о репетиторе"""
     await callback.answer()
@@ -396,7 +399,7 @@ async def callback_student_tutor(callback: types.CallbackQuery):
         await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
 
-@dp.callback_query(lambda c: c.data == "student_back")
+@router.callback_query(lambda c: c.data == "student_back")
 async def callback_student_back(callback: types.CallbackQuery):
     """Вернуться в главное меню ученика"""
     await callback.answer()

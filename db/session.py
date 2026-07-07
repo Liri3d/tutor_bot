@@ -6,23 +6,38 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncEngine
 )
-from sqlalchemy.orm import sessionmaker
 from .models import Base
 
 # Читаем URL базы данных из переменных окружения
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://user:password@localhost:5432/tutor_bot"
+    "sqlite+aiosqlite:///./tutor_bot.db"
 )
+
+# Настройки для разных БД
+is_sqlite = DATABASE_URL.startswith("sqlite")
+
+# Базовые параметры подключения
+engine_kwargs = {
+    "echo": False,
+    "pool_pre_ping": True,
+}
+
+# Для SQLite свои настройки
+if is_sqlite:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Для PostgreSQL добавляем пул соединений
+    engine_kwargs.update({
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_recycle": 3600,
+    })
 
 # Создаём асинхронный движок
 engine: AsyncEngine = create_async_engine(
     DATABASE_URL,
-    echo=False,  # В продакшене выключить, для отладки можно включить
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=3600,
+    **engine_kwargs
 )
 
 # Создаём фабрику сессий
@@ -47,7 +62,6 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     """Инициализация базы данных - создание всех таблиц"""
     async with engine.begin() as conn:
-        # Создаём все таблицы
         await conn.run_sync(Base.metadata.create_all)
     print("✅ База данных инициализирована")
 

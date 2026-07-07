@@ -2,7 +2,6 @@ import logging
 
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-# (AsyncSession не требуется напрямую в этом модуле)
 
 from db import get_session
 from db.crud import get_user_by_telegram_id
@@ -11,8 +10,6 @@ from .registration import register_student_by_invite, register_tutor
 from .tutor import show_tutor_menu
 from .student import show_student_menu
 
-# dp будет внедряться из tutor_bot/main.py
-dp = None
 logger = logging.getLogger(__name__)
 
 
@@ -105,7 +102,6 @@ async def handle_role_student(callback: types.CallbackQuery):
             await callback.message.answer("❌ Вы уже зарегистрированы как репетитор.")
             return
 
-        # Если ученик пришел СЮДА без invite — по условию сообщаем, что учеников добавляют по инвайту
         await callback.message.answer(
             "👨‍🎓 Ученики подключаются к репетитору по приглашению.\n\n"
             "Получите инвайт-ссылку от репетитора и откройте её — тогда вы сможете зарегистрироваться."
@@ -133,10 +129,19 @@ async def handle_invite_registration(message: types.Message, session, invite_cod
         )
         
         # Уведомляем репетитора
-        # ...
+        try:
+            await message.bot.send_message(
+                tutor.telegram_id,
+                f"🎉 К вам подключился новый ученик!\n\n"
+                f"👤 {message.from_user.first_name or 'Без имени'}"
+                f"{' (@' + message.from_user.username + ')' if message.from_user.username else ''}"
+            )
+        except Exception as e:
+            logger.error(f"Не удалось уведомить репетитора: {e}")
         
     except ValueError as e:
         await message.answer(f"❌ {str(e)}")
     except Exception as e:
         await session.rollback()
+        logger.error(f"Ошибка при регистрации: {e}")
         await message.answer("❌ Произошла ошибка при регистрации.")
