@@ -1,48 +1,48 @@
-import os
-import asyncio
+"""Telegram bot entrypoint.
+
+This module is imported by tutor_bot/run.py.
+
+It wires up aiogram Dispatcher and registers handlers from handlers/*.
+"""
+
 import logging
-from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
 
-load_dotenv()
+from aiogram import Bot, Dispatcher
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+
+from config import config
+
+from .handlers import common as common_handlers
+from .handlers import tutor as tutor_handlers
+from .handlers import student as student_handlers
+
+
+# Configure logging
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-TOKEN = os.getenv("BOT_TOKEN")
-ID = int(os.getenv("TUTOR_TELEGRAM_ID", 0))
 
-if not TOKEN:
-    raise ValueError("Токен не найден! Проверьте .env файл.")
+async def main() -> None:
+    """Start bot + register handlers."""
+    bot = Bot(token=config.BOT_TOKEN, parse_mode=ParseMode.HTML)
+    dp = Dispatcher(storage=MemoryStorage())
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+    # Expose dp to handler modules that use @dp decorators
+    # (tutor.py/student.py/common.py were written with global dp usage).
+    tutor_handlers.dp = dp
+    student_handlers.dp = dp
+    common_handlers.dp = dp
 
-@dp.message(Command("start"))
-async def cmd_start(message: types.Message):
-    user_id = message.from_user.id
-    if user_id == ID:
-        text = "Здравствуйте, репетитор!"
-    else:
-        text = "Привет, ученик!"
-    
-    await message.answer(text, parse_mode="Markdown")
+    # Register handlers for /start and role selection
+    dp.message.register(common_handlers.cmd_start)
+    dp.callback_query.register(common_handlers.ask_role)  # no-op; kept for safety
 
-@dp.message(Command("help"))
-async def cmd_help(message: types.Message):
-    user_id = message.from_user.id
-    if user_id == ID:
-        text = "**Команды репетитора:**\n/add_slot - добавить урок\n/my_slots - мои уроки"
-    else:
-        text = "**Команды ученика:**\n/slots - свободные уроки\n/book - записаться"
-    await message.answer(text, parse_mode="Markdown")
+    # role callbacks
+    dp.callback_query.register(common_handlers.handle_role_tutor, lambda c: c.data == "role_tutor")
+    dp.callback_query.register(common_handlers.handle_role_student, lambda c: c.data == "role_student")
 
-@dp.message()
-async def unknown(message: types.Message):
-    await message.answer("Я не знаю такой команды.")
-
-async def main():
-    print("Бот запущен")
+    # Load other callback handlers (decorated in tutor.py/student.py)
+    # No explicit registration needed if decorators were attached to dp correctly above.
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
-    asyncio.run(main())
