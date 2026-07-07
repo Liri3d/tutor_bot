@@ -3,7 +3,7 @@ import uvicorn
 from threading import Thread
 
 from tutor_bot.main import main as bot_main
-from api.main import app
+from tutor_bot.api.main import app
 
 
 def run_bot():
