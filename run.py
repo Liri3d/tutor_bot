@@ -5,10 +5,8 @@ from threading import Thread
 from main import main as bot_main
 from api.main import app
 
-
-def run_bot():
-    """Запуск Telegram бота в отдельном потоке"""
-    asyncio.run(bot_main())
+async def run_bot():
+    await bot_main()
 
 
 def run_api():
@@ -17,9 +15,8 @@ def run_api():
 
 
 if __name__ == "__main__":
-    # Запускаем бота в потоке
-    bot_thread = Thread(target=run_bot)
-    bot_thread.start()
+    # Запускаем бота в главном потоке
+    asyncio.create_task(run_bot())
     
-    # Запускаем API
-    run_api()
+    # Запускаем uvicorn (он тоже асинхронный)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
