@@ -2,7 +2,7 @@ import asyncio
 import uvicorn
 from threading import Thread
 
-from tutor_bot import main as bot_main
+import main as bot_main
 from tutor_bot.api.main import app
 
 
