@@ -58,7 +58,6 @@ async def ask_role(message: types.Message):
         reply_markup=keyboard
     )
 
-
 async def handle_role_tutor(callback: types.CallbackQuery):
     """Обработка выбора роли репетитор"""
     await callback.answer()

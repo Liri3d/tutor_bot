@@ -17,7 +17,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = 'users'
     
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     first_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -60,7 +60,7 @@ class User(Base):
 class Invite(Base):
     __tablename__ = 'invites'
     
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     tutor_id: Mapped[int] = mapped_column(
         BigInteger, 
@@ -94,7 +94,7 @@ class Invite(Base):
 class Relationship(Base):
     __tablename__ = 'relationships'
     
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     tutor_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey('users.id', ondelete='CASCADE'),
@@ -161,7 +161,7 @@ class Relationship(Base):
 class Subscription(Base):
     __tablename__ = 'subscriptions'
     
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     relationship_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey('relationships.id', ondelete='CASCADE'),
@@ -212,7 +212,7 @@ class Subscription(Base):
 class Lesson(Base):
     __tablename__ = 'lessons'
     
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     relationship_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey('relationships.id', ondelete='CASCADE'),
