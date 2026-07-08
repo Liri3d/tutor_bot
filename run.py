@@ -18,12 +18,12 @@ async def main():
     # Запускаем бота в фоне
     bot_task = asyncio.create_task(run_bot())
     
-    # Запускаем uvicorn сервер (он блокирующий, но асинхронный)
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000, loop="asyncio")
-    server = uvicorn.Server(config)
+    # # Запускаем uvicorn сервер (он блокирующий, но асинхронный)
+    # config = uvicorn.Config(app, host="0.0.0.0", port=8000, loop="asyncio")
+    # server = uvicorn.Server(config)
     
     # Ждём выполнения обоих задач
-    await asyncio.gather(bot_task, server.serve())
+    await asyncio.gather(bot_task) # , server.serve()
 
 if __name__ == "__main__":
     asyncio.run(main())
