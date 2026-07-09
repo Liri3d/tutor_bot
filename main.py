@@ -1,49 +1,43 @@
-"""Telegram bot entrypoint."""
-
-import logging
 import asyncio
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
 
-from aiogram import Bot, Dispatcher
-from aiogram.enums import ParseMode
-from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.client.default import DefaultBotProperties
+from config import BOT_TOKEN
 
-from config import config
-from db import init_db
-from handlers.common import cmd_start, handle_role_tutor, handle_role_student
-from handlers.tutor import router as tutor_router
-from handlers.student import router as student_router
-
+# Включаем логирование (чтобы видеть ошибки)
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
+# Создаём бота
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
 
-async def main() -> None:
-    """Start bot + register handlers."""
-    # Инициализация БД
-    await init_db()
-    
-    # Создаем бота
-    bot = Bot(
-        token=config.BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-    )
-    dp = Dispatcher(storage=MemoryStorage())
+# ============================================
+# ОБРАБОТЧИКИ СООБЩЕНИЙ
+# ============================================
 
-    # Регистрируем команду /start
-    dp.message.register(cmd_start)
-    
-    # Регистрируем callback'и для выбора роли
-    dp.callback_query.register(handle_role_tutor, lambda c: c.data == "role_tutor")
-    dp.callback_query.register(handle_role_student, lambda c: c.data == "role_student")
+# 1. Команда /start
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer("👋 Привет! Я бот.")
 
-    # Подключаем роутеры
-    dp.include_router(tutor_router)
-    dp.include_router(student_router)
+# 2. Команда /help
+@dp.message(Command("help"))
+async def cmd_help(message: types.Message):
+    await message.answer("📋 Доступные команды: /start, /help")
 
-    logger.info("🚀 Бот запущен!")
+# 3. Все остальные сообщения
+@dp.message()
+async def echo(message: types.Message):
+    await message.answer(f"Ты написал: {message.text}")
+
+# ============================================
+# ЗАПУСК
+# ============================================
+
+async def main():
+    print("🚀 Бот запущен!")
     await dp.start_polling(bot)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
