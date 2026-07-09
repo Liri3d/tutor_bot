@@ -5,6 +5,8 @@ from aiogram.filters import Command
 
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
 
 from config import BOT_TOKEN
 
@@ -43,6 +45,29 @@ def get_inline_keyboard():
         ]
     )
 
+class OrderStates(StatesGroup):
+    waiting_for_name = State()      # Ждём имя
+    waiting_for_address = State()   # Ждём адрес
+
+@dp.message(Command("order"))
+async def cmd_order(message: types.Message, state: FSMContext):
+    await state.set_state(OrderStates.waiting_for_name)
+    await message.answer("Как вас зовут?")
+
+@dp.message(OrderStates.waiting_for_name)
+async def process_name(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await state.set_state(OrderStates.waiting_for_address)
+    await message.answer("Введите адрес доставки:")
+
+@dp.message(OrderStates.waiting_for_address)
+async def process_address(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    name = data.get("name")
+    address = message.text
+    
+    await message.answer(f"✅ Заказ оформлен!\nИмя: {name}\nАдрес: {address}")
+    await state.clear()  # Очищаем состояние
 
 
 @dp.message(Command("start"))
