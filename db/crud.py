@@ -162,3 +162,50 @@ async def create_lesson(
     session.add(lesson)
     await session.flush()
     return lesson
+
+async def delete_user_cascade(session: AsyncSession, user_id: int) -> None:
+    """
+    Каскадное удаление пользователя и всех связанных записей.
+    """
+    from sqlalchemy import delete, and_, not_
+    from .models import User, Invite, Relationship, Subscription, Lesson
+    
+    # 1. Находим учеников, которые связаны ТОЛЬКО с этим репетитором
+    #    (чтобы не удалять учеников у других репетиторов)
+    stmt = (
+        select(Relationship.student_id)
+        .where(Relationship.tutor_id == user_id)
+        .group_by(Relationship.student_id)
+        .having(func.count(Relationship.tutor_id) == 1)
+    )
+    result = await session.execute(stmt)
+    orphan_student_ids = [row[0] for row in result.all()]
+    
+    # 2. Удаляем орфан-учеников (связанных только с этим репетитором)
+    if orphan_student_ids:
+        await session.execute(
+            delete(User).where(User.id.in_(orphan_student_ids))
+        )
+    
+    # 3. Удаляем все связи репетитора
+    await session.execute(
+        delete(Relationship).where(
+            or_(
+                Relationship.tutor_id == user_id,
+                Relationship.student_id == user_id
+            )
+        )
+    )
+    
+    # 4. Удаляем все приглашения репетитора
+    await session.execute(
+        delete(Invite).where(Invite.tutor_id == user_id)
+    )
+    
+    # 5. Удаляем занятия и абонементы — они удалятся каскадно,
+    #    но для уверенности можно удалить явно
+    
+    # 6. Удаляем самого пользователя
+    await session.execute(
+        delete(User).where(User.id == user_id)
+    )

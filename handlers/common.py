@@ -2,7 +2,7 @@ import logging
 
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
+from aiogram.fsm.context import FSMContext
 
 from services import get_user_by_telegram, get_or_create_user, get_session
 from services.relationship_service import register_student_by_invite as service_register_student
@@ -12,8 +12,13 @@ from .student import show_student_menu
 
 logger = logging.getLogger(__name__)
 
-async def cmd_start(message: types.Message):
+async def cmd_start(message: types.Message, state: FSMContext):
     """Обработка команды /start"""
+    current_state = await state.get_state()
+    if current_state:
+        await state.clear()
+        await message.answer("ℹ️ Действие отменено.")
+        
     user_id = message.from_user.id
     args = message.text.split()
     invite_code = None
@@ -26,7 +31,7 @@ async def cmd_start(message: types.Message):
             invite_code = param
     
     async for session in get_session():
-        # Используем СЕРВИС вместо CRUD
+
         user = await get_user_by_telegram(session, user_id)
         
         if user:

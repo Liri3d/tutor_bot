@@ -12,11 +12,10 @@ def get_guest_keyboard():
     )
 
 def get_tutor_keyboard():
-    """Клавиатура для репетитора"""
     buttons = [
         [KeyboardButton(text="📅 Мои занятия"), KeyboardButton(text="➕ Добавить занятие")],
         [KeyboardButton(text="👥 Мои ученики"), KeyboardButton(text="🔗 Пригласить ученика")],
-        [KeyboardButton(text="⚙️ Настройки")]
+        [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="🗑️ Удалить аккаунт")],
     ]
     return ReplyKeyboardMarkup(
         keyboard=buttons,

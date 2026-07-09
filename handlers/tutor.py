@@ -1,473 +1,29 @@
-# from aiogram import types, Router
-# from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-# from aiogram.utils.keyboard import InlineKeyboardBuilder
-# from datetime import datetime
-# from sqlalchemy import select, and_
+from __future__ import annotations
 
-# from db import get_session
-# from db.crud import get_user_by_telegram_id, get_tutor_students
-# from db.models import User, Relationship
-
-# # Создаем роутер
-# router = Router()
-
-
-# async def show_tutor_menu(message: types.Message, user: User):
-#     """Показать главное меню репетитора"""
-#     text = (
-#         f"👋 Здравствуйте, {user.first_name or 'репетитор'}!\n\n"
-#         "Выберите действие:"
-#     )
-    
-#     keyboard = InlineKeyboardMarkup(
-#         inline_keyboard=[
-#             [
-#                 InlineKeyboardButton(
-#                     text="📅 Расписание",
-#                     callback_data="tutor_schedule"
-#                 )
-#             ],
-#             [
-#                 InlineKeyboardButton(
-#                     text="👥 Мои ученики",
-#                     callback_data="tutor_students"
-#                 )
-#             ],
-#             [
-#                 InlineKeyboardButton(
-#                     text="➕ Добавить занятие",
-#                     callback_data="tutor_add_lesson"
-#                 )
-#             ],
-#             [
-#                 InlineKeyboardButton(
-#                     text="🔗 Создать приглашение",
-#                     callback_data="tutor_invite"
-#                 )
-#             ],
-#             [
-#                 InlineKeyboardButton(
-#                     text="⚙️ Настройки",
-#                     callback_data="tutor_settings"
-#                 )
-#             ]
-#         ]
-#     )
-    
-#     await message.answer(text, reply_markup=keyboard)
-
-
-# @router.callback_query(lambda c: c.data == "tutor_students")
-# async def callback_tutor_students(callback: types.CallbackQuery):
-#     """Показать список учеников репетитора"""
-#     await callback.answer()
-    
-#     user_id = callback.from_user.id
-    
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, user_id)
-#         if not user:
-#             await callback.message.edit_text("❌ Пользователь не найден.")
-#             return
-        
-#         students = await get_tutor_students(session, user.id)
-        
-#         if not students:
-#             text = (
-#                 "👥 У вас пока нет учеников.\n\n"
-#                 "Создайте приглашение и отправьте его ученикам:\n"
-#                 "Нажмите кнопку 'Создать приглашение' в главном меню."
-#             )
-#             keyboard = InlineKeyboardMarkup(
-#                 inline_keyboard=[
-#                     [
-#                         InlineKeyboardButton(
-#                             text="🔗 Создать приглашение",
-#                             callback_data="tutor_invite"
-#                         )
-#                     ],
-#                     [
-#                         InlineKeyboardButton(
-#                             text="↩️ Назад в меню",
-#                             callback_data="tutor_back"
-#                         )
-#                     ]
-#                 ]
-#             )
-#             await callback.message.edit_text(text, reply_markup=keyboard)
-#             return
-        
-#         text = "👥 **Ваши ученики:**\n\n"
-        
-#         keyboard = InlineKeyboardBuilder()
-        
-#         for student in students:
-#             text += f"• {student.first_name or 'Без имени'}"
-#             if student.username:
-#                 text += f" (@{student.username})"
-#             text += "\n"
-#             from aiogram import types, Router
-# from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-# from aiogram.utils.keyboard import InlineKeyboardBuilder
-# from datetime import datetime
-# from sqlalchemy import select, and_
-
-# from db import get_session
-# from db.crud import get_user_by_telegram_id, get_tutor_students
-# from db.models import User, Relationship
-
-# # Импортируем Reply Keyboard
-# from keyboards import get_tutor_keyboard
-
-# router = Router()
-
-
-# async def show_tutor_menu(message: types.Message, user: User):
-#     """Показать главное меню репетитора"""
-#     text = (
-#         f"👋 Здравствуйте, {user.first_name or 'репетитор'}!\n\n"
-#         "Выберите действие с помощью кнопок ниже:"
-#     )
-    
-#     # Используем Reply Keyboard вместо Inline
-#     await message.answer(
-#         text,
-#         reply_markup=get_tutor_keyboard()
-#     )
-
-
-# @router.message(lambda msg: msg.text == "📅 Мои занятия")
-# async def handle_my_lessons(message: types.Message):
-#     """Обработка кнопки 'Мои занятия' для репетитора"""
-#     # ... логика показа занятий
-
-
-# @router.message(lambda msg: msg.text == "➕ Добавить занятие")
-# async def handle_add_lesson(message: types.Message):
-#     """Обработка кнопки 'Добавить занятие'"""
-#     # ... логика добавления занятия
-
-
-# @router.message(lambda msg: msg.text == "👥 Мои ученики")
-# async def handle_my_students(message: types.Message):
-#     """Обработка кнопки 'Мои ученики'"""
-#     # ... логика показа учеников
-
-
-# @router.message(lambda msg: msg.text == "🔗 Пригласить ученика")
-# async def handle_invite(message: types.Message):
-#     """Обработка кнопки 'Пригласить ученика'"""
-#     # ... логика создания инвайта
-
-
-# @router.message(lambda msg: msg.text == "⚙️ Настройки")
-# async def handle_settings(message: types.Message):
-#     """Обработка кнопки 'Настройки'"""
-#     # ... логика настроек
-#             # Добавляем кнопку для управления учеником
-#             keyboard.button(
-#                 text=f"📋 {student.first_name or 'Ученик'}",
-#                 callback_data=f"student_manage_{student.id}"
-#             )
-        
-#         keyboard.button(
-#             text="🔗 Создать приглашение",
-#             callback_data="tutor_invite"
-#         )
-#         keyboard.button(
-#             text="↩️ Назад в меню",
-#             callback_data="tutor_back"
-#         )
-#         keyboard.adjust(1, 1)
-        
-#         await callback.message.edit_text(
-#             text,
-#             parse_mode="Markdown",
-#             reply_markup=keyboard.as_markup()
-#         )
-
-
-# @router.callback_query(lambda c: c.data == "tutor_invite")
-# async def callback_tutor_invite(callback: types.CallbackQuery):
-#     """Создать приглашение для ученика"""
-#     await callback.answer()
-    
-#     user_id = callback.from_user.id
-    
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, user_id)
-#         if not user or user.role != 'tutor':
-#             await callback.message.edit_text("❌ Только репетитор может создавать приглашения.")
-#             return
-        
-#         from datetime import datetime, timedelta
-#         from db.crud import create_invite
-#         from config import config
-        
-#         # Создаём приглашение на 7 дней
-#         expires_at = datetime.now() + timedelta(days=config.INVITE_EXPIRE_DAYS)
-#         invite = await create_invite(session, user.id, expires_at)
-#         await session.commit()
-        
-#         bot_username = (await callback.bot.get_me()).username
-        
-#         text = (
-#             "🔗 **Ваша ссылка-приглашение создана!**\n\n"
-#             f"Отправьте её ученику:\n"
-#             f"`https://t.me/{bot_username}?start=invite_{invite.code}`\n\n"
-#             f"Код приглашения: `{invite.code}`\n"
-#             f"Действительно до: {expires_at.strftime('%d.%m.%Y %H:%M')}\n\n"
-#             "ℹ️ Ученик может использовать ссылку или ввести код вручную."
-#         )
-        
-#         keyboard = InlineKeyboardMarkup(
-#             inline_keyboard=[
-#                 [
-#                     InlineKeyboardButton(
-#                         text="📋 Скопировать ссылку",
-#                         callback_data=f"copy_{invite.code}"
-#                     )
-#                 ],
-#                 [
-#                     InlineKeyboardButton(
-#                         text="↩️ Назад в меню",
-#                         callback_data="tutor_back"
-#                     )
-#                 ]
-#             ]
-#         )
-        
-#         await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-
-
-# @router.callback_query(lambda c: c.data == "tutor_back")
-# async def callback_tutor_back(callback: types.CallbackQuery):
-#     """Вернуться в главное меню репетитора"""
-#     await callback.answer()
-    
-#     user_id = callback.from_user.id
-    
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, user_id)
-#         if user:
-#             await show_tutor_menu(callback.message, user)
-#         else:
-#             await callback.message.edit_text("❌ Пользователь не найден.")
-
-
-# @router.callback_query(lambda c: c.data.startswith("student_manage_"))
-# async def callback_student_manage(callback: types.CallbackQuery):
-#     """Управление конкретным учеником"""
-#     await callback.answer()
-    
-#     student_id = int(callback.data.split("_")[2])
-#     user_id = callback.from_user.id
-    
-#     async for session in get_session():
-#         # Получаем ученика
-#         student = await session.get(User, student_id)
-#         if not student:
-#             await callback.message.edit_text("❌ Ученик не найден.")
-#             return
-        
-#         text = (
-#             f"📋 **Управление учеником**\n\n"
-#             f"👤 {student.first_name or 'Без имени'}"
-#             f"{' (@' + student.username + ')' if student.username else ''}\n\n"
-#             "Выберите действие:"
-#         )
-        
-#         keyboard = InlineKeyboardMarkup(
-#             inline_keyboard=[
-#                 [
-#                     InlineKeyboardButton(
-#                         text="📅 Занятия ученика",
-#                         callback_data=f"student_lessons_{student_id}"
-#                     )
-#                 ],
-#                 [
-#                     InlineKeyboardButton(
-#                         text="💰 Баланс занятий",
-#                         callback_data=f"student_balance_{student_id}"
-#                     )
-#                 ],
-#                 [
-#                     InlineKeyboardButton(
-#                         text="⏸️ Приостановить",
-#                         callback_data=f"student_pause_{student_id}"
-#                     )
-#                 ],
-#                 [
-#                     InlineKeyboardButton(
-#                         text="🔴 Отвязать ученика",
-#                         callback_data=f"student_remove_{student_id}"
-#                     )
-#                 ],
-#                 [
-#                     InlineKeyboardButton(
-#                         text="↩️ Назад к ученикам",
-#                         callback_data="tutor_students"
-#                     )
-#                 ]
-#             ]
-#         )
-        
-#         await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-
-
-# @router.callback_query(lambda c: c.data.startswith("student_remove_"))
-# async def callback_student_remove(callback: types.CallbackQuery):
-#     """Отвязать ученика"""
-#     await callback.answer()
-    
-#     student_id = int(callback.data.split("_")[2])
-#     user_id = callback.from_user.id
-    
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, user_id)
-#         if not user:
-#             await callback.message.edit_text("❌ Пользователь не найден.")
-#             return
-        
-#         # Находим связь
-#         stmt = select(Relationship).where(
-#             and_(
-#                 Relationship.tutor_id == user.id,
-#                 Relationship.student_id == student_id,
-#                 Relationship.status == 'active'
-#             )
-#         )
-#         result = await session.execute(stmt)
-#         relationship = result.scalar_one_or_none()
-        
-#         if not relationship:
-#             await callback.message.edit_text("❌ Связь с учеником не найдена.")
-#             return
-        
-#         text = (
-#             "⚠️ **Подтверждение отвязки**\n\n"
-#             "Вы уверены, что хотите отвязать ученика?\n\n"
-#             "❌ Все будущие занятия будут отменены.\n"
-#             "❌ Связь будет разорвана.\n\n"
-#             "Ученик получит уведомление."
-#         )
-        
-#         keyboard = InlineKeyboardMarkup(
-#             inline_keyboard=[
-#                 [
-#                     InlineKeyboardButton(
-#                         text="✅ Да, отвязать",
-#                         callback_data=f"student_remove_confirm_{student_id}"
-#                     )
-#                 ],
-#                 [
-#                     InlineKeyboardButton(
-#                         text="❌ Нет, отмена",
-#                         callback_data=f"student_manage_{student_id}"
-#                     )
-#                 ]
-#             ]
-#         )
-        
-#         await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-
-
-# @router.callback_query(lambda c: c.data.startswith("student_remove_confirm_"))
-# async def callback_student_remove_confirm(callback: types.CallbackQuery):
-#     """Подтверждение отвязки ученика"""
-#     await callback.answer()
-    
-#     student_id = int(callback.data.split("_")[3])
-#     user_id = callback.from_user.id
-    
-#     async for session in get_session():
-#         try:
-#             user = await get_user_by_telegram_id(session, user_id)
-#             if not user:
-#                 await callback.message.edit_text("❌ Пользователь не найден.")
-#                 return
-            
-#             # Находим связь
-#             stmt = select(Relationship).where(
-#                 and_(
-#                     Relationship.tutor_id == user.id,
-#                     Relationship.student_id == student_id
-#                 )
-#             )
-#             result = await session.execute(stmt)
-#             relationship = result.scalar_one_or_none()
-            
-#             if not relationship:
-#                 await callback.message.edit_text("❌ Связь не найдена.")
-#                 return
-            
-#             # Отвязываем ученика
-#             relationship.status = 'inactive'
-#             relationship.updated_at = datetime.now()
-            
-#             # Отменяем все будущие занятия
-#             from db.models import Lesson
-#             stmt = select(Lesson).where(
-#                 and_(
-#                     Lesson.relationship_id == relationship.id,
-#                     Lesson.status == 'scheduled',
-#                     Lesson.start_time > datetime.now()
-#                 )
-#             )
-#             result = await session.execute(stmt)
-#             lessons = result.scalars().all()
-            
-#             for lesson in lessons:
-#                 lesson.status = 'cancelled'
-            
-#             await session.commit()
-            
-#             # Получаем информацию об ученике
-#             student = await session.get(User, student_id)
-            
-#             # Уведомляем ученика
-#             try:
-#                 await callback.bot.send_message(
-#                     student.telegram_id,
-#                     "⚠️ Репетитор отвязал вас.\n\n"
-#                     "Все будущие занятия были отменены.\n"
-#                     "Если это ошибка, свяжитесь с репетитором."
-#                 )
-#             except Exception as e:
-#                 logging.error(f"Не удалось уведомить ученика: {e}")
-            
-#             await callback.message.edit_text(
-#                 "✅ Ученик успешно отвязан.\n"
-#                 "Все будущие занятия отменены."
-#             )
-            
-#             # Через 2 секунды возвращаемся к списку учеников
-#             await asyncio.sleep(2)
-#             await callback_tutor_students(callback)
-            
-#         except Exception as e:
-#             await session.rollback()
-#             logging.error(f"Ошибка при отвязке ученика: {e}")
-#             await callback.message.edit_text("❌ Произошла ошибка при отвязке ученика.")
-
-
-
-
-from aiogram import types, Router
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from datetime import datetime
-from sqlalchemy import select, and_
 
-from db import get_session
-from db.crud import get_user_by_telegram_id, get_tutor_students
-from db.models import User, Relationship
+from aiogram import Router, types
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# Импортируем Reply Keyboard
+from db import Relationship, User
 from keyboards import get_tutor_keyboard
+from services import get_session, get_user_by_telegram
+from services.lesson_service import create_new_lesson, get_student_lessons
+from services.relationship_service import create_invite_code
+from services.user_service import delete_tutor_account
+
+from aiogram.fsm.state import State, StatesGroup
 
 router = Router()
 
+@router.message(lambda msg: msg.text == "🗑️ Удалить аккаунт")
+async def handle_delete_account(message: types.Message, state: FSMContext):
+    """Запуск процесса удаления аккаунта"""
+    await message.answer("🔴 КНОПКА СРАБОТАЛА!")
 
 async def show_tutor_menu(message: types.Message, user: User):
     """Показать главное меню репетитора"""
@@ -475,39 +31,372 @@ async def show_tutor_menu(message: types.Message, user: User):
         f"👋 Здравствуйте, {user.first_name or 'репетитор'}!\n\n"
         "Выберите действие с помощью кнопок ниже:"
     )
-    
-    # Используем Reply Keyboard вместо Inline
-    await message.answer(
-        text,
-        reply_markup=get_tutor_keyboard()
-    )
+
+    await message.answer(text, reply_markup=get_tutor_keyboard())
+
+
+async def _get_tutor(session: AsyncSession, telegram_id: int) -> User:
+    user = await get_user_by_telegram(session, telegram_id)
+    if not user or user.role != "tutor":
+        raise ValueError("Вы не зарегистрированы как репетитор")
+    return user
 
 
 @router.message(lambda msg: msg.text == "📅 Мои занятия")
 async def handle_my_lessons(message: types.Message):
     """Обработка кнопки 'Мои занятия' для репетитора"""
-    # ... логика показа занятий
+    telegram_id = message.from_user.id
 
+    async for session in get_session():
+        try:
+            tutor = await _get_tutor(session, telegram_id)
 
-@router.message(lambda msg: msg.text == "➕ Добавить занятие")
-async def handle_add_lesson(message: types.Message):
-    """Обработка кнопки 'Добавить занятие'"""
-    # ... логика добавления занятия
+            # Список занятий репетитора = занятия всех активных relationships репетитора
+            stmt = (
+                select(User)
+            )
+            # В текущем каркасе нет CRUD/сервиса для "занятий репетитора" напрямую.
+            # Поэтому реализуем минимальный рабочий вывод: получаем active relationships
+            # через relationship table и затем берём занятия студентов через get_student_lessons.
+            rel_stmt = (
+                select(Relationship)
+                .where(Relationship.tutor_id == tutor.id)
+                .where(Relationship.status == "active")
+            )
+            rel_res = await session.execute(rel_stmt)
+            relationships = list(rel_res.scalars().all())
+
+            if not relationships:
+                await message.answer("У вас пока нет активных учеников.")
+                return
+
+            all_lines: list[str] = []
+            # ограничим по времени/кол-ву через get_student_lessons
+            for rel in relationships:
+                lessons = await get_student_lessons(session=session, student_id=rel.student_id, limit=5)
+                for l in lessons:
+                    subj = f" — {l.subject}" if l.subject else ""
+                    all_lines.append(
+                        f"• {l.start_time:%Y-%m-%d %H:%M} (ученик: {rel.student_id}) ({l.duration_minutes} мин){subj}"
+                    )
+
+            if not all_lines:
+                await message.answer("На ближайшее время занятий пока нет.")
+                return
+
+            # простая сортировка по строкам неудобна; делаем сортировку по start_time через повторный сбор не усложняя.
+            all_lines = sorted(all_lines)
+            await message.answer("Ближайшие занятия:\n" + "\n".join(all_lines[:20]))
+        except Exception as e:
+            await message.answer(f"❌ {e}")
 
 
 @router.message(lambda msg: msg.text == "👥 Мои ученики")
 async def handle_my_students(message: types.Message):
     """Обработка кнопки 'Мои ученики'"""
-    # ... логика показа учеников
+    telegram_id = message.from_user.id
+
+    async for session in get_session():
+        try:
+            tutor = await _get_tutor(session, telegram_id)
+            stmt = (
+                select(User)
+                .join(Relationship, Relationship.student_id == User.id)
+                .where(Relationship.tutor_id == tutor.id)
+                .where(Relationship.status == "active")
+            )
+            res = await session.execute(stmt)
+            students = res.scalars().all()
+
+            if not students:
+                await message.answer("У вас пока нет активных учеников.")
+                return
+
+            lines = ["Ваши ученики:"]
+            for s in students:
+                lines.append(f"• {s.first_name or 'ученик'} (tg: {s.telegram_id})")
+
+            await message.answer("\n".join(lines))
+        except Exception as e:
+            await message.answer(f"❌ {e}")
 
 
 @router.message(lambda msg: msg.text == "🔗 Пригласить ученика")
 async def handle_invite(message: types.Message):
     """Обработка кнопки 'Пригласить ученика'"""
-    # ... логика создания инвайта
+    telegram_id = message.from_user.id
+
+    async for session in get_session():
+        try:
+            tutor = await _get_tutor(session, telegram_id)
+            code = await create_invite_code(session=session, tutor_id=tutor.id)
+            await message.answer(
+                "🔗 Ваш код приглашения:\n"
+                f"invite_{code}\n\n"
+                "Отправьте код ученику (откройте ссылку/укажите код в /start)."
+            )
+        except Exception as e:
+            await message.answer(f"❌ {e}")
+
+
+class AddLessonStates(StatesGroup):
+    waiting_for_student_id = State()
+    waiting_for_start_time = State()
+    waiting_for_duration = State()
+    waiting_for_subject = State()
+    waiting_for_paid = State()
+
+
+@router.message(lambda msg: msg.text == "➕ Добавить занятие")
+async def handle_add_lesson(message: types.Message, state: FSMContext):
+    """Обработка кнопки 'Добавить занятие' (FSM)"""
+    telegram_id = message.from_user.id
+    await state.clear()
+
+    async for session in get_session():
+        try:
+            tutor = await _get_tutor(session, telegram_id)
+
+            rel_stmt = (
+                select(Relationship)
+                .where(Relationship.tutor_id == tutor.id)
+                .where(Relationship.status == "active")
+            )
+            rel_res = await session.execute(rel_stmt)
+            relationships = list(rel_res.scalars().all())
+
+            if not relationships:
+                await message.answer("Сначала подключите ученика через '🔗 Пригласить ученика'.")
+                return
+
+            # Кнопки: по student_id (минимальный вариант без доп. клавиатурных сущностей)
+            keyboard = ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text=f"{rel.student_id}") for rel in relationships[:8]]],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            )
+
+            await state.update_data(tutor_id=tutor.id)
+            await state.set_state(AddLessonStates.waiting_for_student_id)
+
+            await message.answer(
+                "Выберите ученка (tg user id) из кнопок ниже или введите id текстом:\n"
+                "Отмена: нажмите кнопку меню '⚙️ Настройки' или '📅 Мои занятия'.",
+                reply_markup=keyboard,
+            )
+        except Exception as e:
+            await message.answer(f"❌ {e}")
+
+
+@router.message(AddLessonStates.waiting_for_student_id)
+async def fsm_student_id(message: types.Message, state: FSMContext):
+    telegram_id_text = message.text.strip()
+    if not telegram_id_text.isdigit():
+        await message.answer("Введите числовой ID ученика.")
+        return
+
+    await state.update_data(student_id=int(telegram_id_text))
+    await state.set_state(AddLessonStates.waiting_for_start_time)
+    await message.answer("Введите дату и время начала в формате: YYYY-MM-DD HH:MM")
+
+
+@router.message(AddLessonStates.waiting_for_start_time)
+async def fsm_start_time(message: types.Message, state: FSMContext):
+    text = message.text.strip()
+    try:
+        dt = datetime.strptime(text, "%Y-%m-%d %H:%M")
+    except ValueError:
+        await message.answer("Неверный формат. Пример: 2026-07-10 18:30")
+        return
+
+    await state.update_data(start_time=dt)
+    await state.set_state(AddLessonStates.waiting_for_duration)
+    await message.answer("Введите длительность в минутах (10..180)")
+
+
+@router.message(AddLessonStates.waiting_for_duration)
+async def fsm_duration(message: types.Message, state: FSMContext):
+    text = message.text.strip()
+    if not text.isdigit():
+        await message.answer("Введите число минут.")
+        return
+
+    duration = int(text)
+    if duration < 10 or duration > 180:
+        await message.answer("Длительность должна быть в диапазоне 10..180 минут.")
+        return
+
+    await state.update_data(duration_minutes=duration)
+    await state.set_state(AddLessonStates.waiting_for_subject)
+    await message.answer("Введите предмет (или отправьте '-' чтобы пропустить)")
+
+
+@router.message(AddLessonStates.waiting_for_subject)
+async def fsm_subject(message: types.Message, state: FSMContext):
+    subj = message.text.strip()
+    if subj == "-":
+        subj = None
+
+    await state.update_data(subject=subj)
+    await state.set_state(AddLessonStates.waiting_for_paid)
+    await message.answer("Оплачено? Ответьте: да/нет")
+
+
+@router.message(AddLessonStates.waiting_for_paid)
+async def fsm_paid(message: types.Message, state: FSMContext):
+    text = message.text.strip().lower()
+    if text in {"да", "yes", "y", "1"}:
+        paid = True
+    elif text in {"нет", "no", "n", "0"}:
+        paid = False
+    else:
+        await message.answer("Ответьте 'да' или 'нет'.")
+        return
+
+    data = await state.get_data()
+    tutor_id = data["tutor_id"]
+    student_id = data["student_id"]
+    start_time = data["start_time"]
+    duration_minutes = data["duration_minutes"]
+    subject = data.get("subject")
+
+    await state.clear()
+
+    async for session in get_session():
+        try:
+            # relationship_id можно получить через relationship table
+            rel_stmt = (
+                select(Relationship.id)
+                .where(Relationship.tutor_id == tutor_id)
+                .where(Relationship.student_id == student_id)
+                .where(Relationship.status == "active")
+            )
+            rel_res = await session.execute(rel_stmt)
+            relationship_id = rel_res.scalar_one_or_none()
+            if not relationship_id:
+                await message.answer("Не найдена активная связь репетитор-ученик.")
+                return
+
+            await create_new_lesson(
+                session=session,
+                relationship_id=relationship_id,
+                start_time=start_time,
+                duration_minutes=duration_minutes,
+                subject=subject,
+                paid=paid,
+            )
+
+            await message.answer("✅ Занятие добавлено.")
+        except Exception as e:
+            await message.answer(f"❌ Не удалось добавить занятие: {e}")
 
 
 @router.message(lambda msg: msg.text == "⚙️ Настройки")
 async def handle_settings(message: types.Message):
-    """Обработка кнопки 'Настройки'"""
-    # ... логика настроек
+    """Обработка кнопки 'Настройки' (минимум, не ломающий архитектуру)"""
+    await message.answer(
+        "⚙️ Настройки пока не реализованы в полном объёме.\n\n"
+        "Доступно: добавление занятия и управление учениками/инвайтами."
+    )
+
+class DeleteAccountStates(StatesGroup):
+    waiting_for_confirmation = State()
+
+@router.message(lambda msg: msg.text == "🗑️ Удалить аккаунт")
+async def handle_delete_account(message: types.Message, state: FSMContext):
+    """Запуск процесса удаления аккаунта"""
+    telegram_id = message.from_user.id
+    
+    async for session in get_session():
+        try:
+            tutor = await _get_tutor(session, telegram_id)
+            
+            import secrets
+            code = secrets.token_hex(4).upper()
+            await state.update_data(confirmation_code=code, tutor_id=tutor.id)
+            
+            await state.set_state(DeleteAccountStates.waiting_for_confirmation)
+
+            # ✅ Убираем клавиатуру
+            from keyboards import remove_keyboard
+            
+            await message.answer(
+                f"⚠️ **ВНИМАНИЕ!**\n\n"
+                f"Вы собираетесь удалить свой аккаунт репетитора.\n\n"
+                f"Это действие **НЕОБРАТИМО**. Будут удалены:\n"
+                f"• Все ваши ученики\n"
+                f"• Все занятия\n"
+                f"• Все приглашения\n"
+                f"• Вся информация о вас\n\n"
+                f"Для подтверждения отправьте код:\n"
+                f"`УДАЛИТЬ АККАУНТ {code}`\n\n"
+                f"(Введите этот код в точности, включая пробелы)",
+                parse_mode="Markdown",
+                reply_markup=remove_keyboard()  # ← Убираем кнопки!
+            )
+        except Exception as e:
+            await message.answer(f"❌ {e}")
+     
+@router.message(DeleteAccountStates.waiting_for_confirmation)
+async def catch_all_in_delete_state(message: types.Message, state: FSMContext):
+    """
+    Ловит все сообщения, пока пользователь в состоянии удаления аккаунта.
+    Если это не код подтверждения — напоминает, что нужно ввести код.
+    """
+    # Проверяем, является ли сообщение кодом подтверждения
+    data = await state.get_data()
+    expected_code = f"УДАЛИТЬ АККАУНТ {data.get('confirmation_code')}"
+    user_input = message.text.strip()
+    
+    if user_input == expected_code:
+        # ✅ Код верный — вызываем удаление
+        await confirm_delete_account(message, state)
+    else:
+        # ❌ Неверный код — напоминаем
+        await message.answer(
+            f"⚠️ Для удаления аккаунта введите точный код.\n"
+            f"Ожидается: `{expected_code}`\n\n"
+            f"Если вы передумали, просто нажмите /start",
+            parse_mode="Markdown"
+        )
+
+async def confirm_delete_account(message: types.Message, state: FSMContext):
+    """Подтверждение удаления аккаунта"""
+    data = await state.get_data()
+    expected_code = f"УДАЛИТЬ АККАУНТ {data.get('confirmation_code')}"
+    user_input = message.text.strip()
+    
+    if user_input != expected_code:
+        await message.answer(
+            f"❌ Неверный код.\n\n"
+            f"Ожидается: `{expected_code}`\n"
+            f"Вы ввели: `{user_input}`",
+            parse_mode="Markdown"
+        )
+        return
+    
+    # Код верный — удаляем
+    telegram_id = message.from_user.id
+    
+    async for session in get_session():
+        try:
+            # Вызываем сервис для удаления
+            await delete_tutor_account(
+                session=session,
+                telegram_id=telegram_id,
+                confirmation_code=user_input
+            )
+            await session.commit()
+            
+            await state.clear()
+            
+            from keyboards import remove_keyboard
+            await message.answer(
+                "✅ Ваш аккаунт и все связанные данные были успешно удалены.\n\n"
+                "Если вы захотите вернуться, просто нажмите /start и зарегистрируйтесь заново.",
+                reply_markup=remove_keyboard()
+            )
+        except Exception as e:
+            await session.rollback()
+            await message.answer(f"❌ Ошибка при удалении: {e}")
+            await state.clear()
