@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import BOT_TOKEN
 
@@ -24,7 +25,23 @@ def get_main_keyboard():
         resize_keyboard=True  # Чтобы кнопки были удобного размера
     )
 
-
+def get_inline_keyboard():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Подтвердить",
+                    callback_data="confirm"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Отмена",
+                    callback_data="cancel"
+                )
+            ]
+        ]
+    )
 
 
 
@@ -32,8 +49,18 @@ def get_main_keyboard():
 async def cmd_start(message: types.Message):
     await message.answer(
         "Выберите действие:",
-        reply_markup=get_main_keyboard()
+        reply_markup=get_inline_keyboard()
     )
+
+@dp.callback_query(lambda c: c.data == "confirm")
+async def handle_confirm(callback: types.CallbackQuery):
+    await callback.answer()  # Убираем "часики" на кнопке
+    await callback.message.edit_text("✅ Подтверждено!")
+
+@dp.callback_query(lambda c: c.data == "cancel")
+async def handle_cancel(callback: types.CallbackQuery):
+    await callback.answer()
+    await callback.message.edit_text("❌ Отменено!")
 
 @dp.message(lambda msg: msg.text == "📅 Расписание")
 async def handle_schedule(message: types.Message):
