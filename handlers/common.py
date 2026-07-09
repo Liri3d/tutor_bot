@@ -3,15 +3,14 @@ import logging
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from db import get_session
-from db.crud import get_user_by_telegram_id
 
-from .registration import register_student_by_invite, register_tutor
+from services import get_user_by_telegram, get_or_create_user, get_session
+from services.relationship_service import register_student_by_invite as service_register_student
+
 from .tutor import show_tutor_menu
 from .student import show_student_menu
 
 logger = logging.getLogger(__name__)
-
 
 async def cmd_start(message: types.Message):
     """Обработка команды /start"""
@@ -27,10 +26,10 @@ async def cmd_start(message: types.Message):
             invite_code = param
     
     async for session in get_session():
-        user = await get_user_by_telegram_id(session, user_id)
+        # Используем СЕРВИС вместо CRUD
+        user = await get_user_by_telegram(session, user_id)
         
         if user:
-            # Уже зарегистрирован
             if user.role == "tutor":
                 await show_tutor_menu(message, user)
             else:
@@ -38,10 +37,8 @@ async def cmd_start(message: types.Message):
             return
         
         if invite_code:
-            # Регистрация по приглашению
             await handle_invite_registration(message, session, invite_code)
         else:
-            # Предлагаем выбрать роль
             await ask_role(message)
 
 
@@ -58,13 +55,14 @@ async def ask_role(message: types.Message):
         reply_markup=keyboard
     )
 
+
 async def handle_role_tutor(callback: types.CallbackQuery):
     """Обработка выбора роли репетитор"""
     await callback.answer()
     user_id = callback.from_user.id
 
     async for session in get_session():
-        user = await get_user_by_telegram_id(session, user_id)
+        user = await get_user_by_telegram(session, user_id)
         if user:
             if user.role == 'tutor':
                 await show_tutor_menu(callback.message, user)
@@ -73,9 +71,11 @@ async def handle_role_tutor(callback: types.CallbackQuery):
             return
 
         try:
-            tutor = await register_tutor(
+            # Используем СЕРВИС
+            tutor = await get_or_create_user(
                 session=session,
                 telegram_id=user_id,
+                role='tutor',
                 username=callback.from_user.username,
                 first_name=callback.from_user.first_name,
             )
@@ -93,7 +93,7 @@ async def handle_role_student(callback: types.CallbackQuery):
     user_id = callback.from_user.id
 
     async for session in get_session():
-        user = await get_user_by_telegram_id(session, user_id)
+        user = await get_user_by_telegram(session, user_id)
         if user:
             if user.role == 'student':
                 await show_student_menu(callback.message, user)
@@ -112,20 +112,19 @@ async def handle_invite_registration(message: types.Message, session, invite_cod
     user_id = message.from_user.id
     
     try:
-        tutor, relationship = await register_student_by_invite(
+        tutor, relationship = await service_register_student(
             session=session,
             telegram_id=user_id,
+            invite_code=invite_code,
             username=message.from_user.username,
             first_name=message.from_user.first_name,
-            invite_code=invite_code
         )
         
         await session.commit()
         
-        await message.answer(
-            "✅ Вы успешно подключились к репетитору!\n\n"
-            "Используйте /help для списка команд."
-        )
+        # Получаем ученика для меню
+        student = await get_user_by_telegram(session, user_id)
+        await show_student_menu(message, student)
         
         # Уведомляем репетитора
         try:

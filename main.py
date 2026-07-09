@@ -9,12 +9,11 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.default import DefaultBotProperties
 
 from config import config
-from db import init_db, close_db
+from db import init_db
 from handlers.common import cmd_start, handle_role_tutor, handle_role_student
 from handlers.tutor import router as tutor_router
 from handlers.student import router as student_router
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ async def main() -> None:
     # Инициализация БД
     await init_db()
     
-    # Создаем бота с новым синтаксисом
+    # Создаем бота
     bot = Bot(
         token=config.BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)

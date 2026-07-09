@@ -5,5 +5,4 @@ venv/
 .idea/
 .vscode/
 *.db
-secret.txt
 doc/
