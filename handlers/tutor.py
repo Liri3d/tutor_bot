@@ -18,6 +18,7 @@ from keyboards import (
 )
 
 from states import TutorStates
+from services import InviteService, RelationshipService, UserService
 
 tutor_router = Router()
 
@@ -33,13 +34,8 @@ async def handle_tutor_students(callback: types.CallbackQuery, state: FSMContext
             await callback.message.edit_text("❌ Только репетитор может просмотреть список учеников.")
             return
     
-        active_relationships = await get_active_relationships_for_tutor(session, user.id)
-
-        students = []
-        for rel in active_relationships:
-            student = await get_user_by_id(session, rel.student_id)        
-            if student:
-                students.append(student)
+        # Получаем учеников через сервис
+        students = await RelationshipService.get_tutor_students(session, user.id)
 
         if students:
             response_text = f"👤 **Ваши ученики**\n\nВсего: {len(students)}"
@@ -64,7 +60,9 @@ async def handle_student_click(callback: types.CallbackQuery, state: FSMContext)
     student_id = int(callback.data.split("_")[1])
     
     async for session in get_session():
-        student = await get_user_by_id(session, student_id)
+        # Получаем ученика через сервис
+        student = await UserService.get_user_by_id(session, student_id)
+        
         if not student:
             await callback.message.edit_text("❌ Ученик не найден.")
             return
@@ -117,9 +115,7 @@ async def handle_student_name_input(message: types.Message, state: FSMContext):
             await state.clear()
             return
         
-        # Создаём приглашение
-        from db.crud import create_invite
-        invite = await create_invite(
+        invite = await InviteService.create_invite(
             session=session,
             tutor_id=tutor.id,
             student_name=student_name,
@@ -135,8 +131,6 @@ async def handle_student_name_input(message: types.Message, state: FSMContext):
             f"🔑 Код: `{invite.code}`\n"
             f"📅 Действительно до: {invite.expires_at.strftime('%d.%m.%Y %H:%M')}\n\n"
             f"Отправьте ученику эту ссылку:\n"
-            # f"`{invite.code}`\n\n"
-            # f"Или ссылку:\n"
             f"`https://t.me/{bot_username}?start=invite_{invite.code}`\n\n"
             f"ℹ️ Ссылка действительна 24 часа.\n"
             f"ℹ️ После использования ссылка становится недействительной.",
@@ -171,25 +165,6 @@ async def handle_settings_menu(callback: types.CallbackQuery, state: FSMContext)
                  f"Здесь вы можете изменить свои настройки.",
             reply_markup=settings_menu(user.role)
         )
-
-@tutor_router.callback_query(lambda c: c.data == "back_to_main")
-async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
-    """Вернуться в главное меню из настроек"""
-    await callback.answer()
-    
-    async for session in get_session():
-        user = await get_user_by_telegram_id(session, callback.from_user.id)
-        
-        if not user:
-            await callback.message.edit_text("❌ Пользователь не найден.")
-            return
-        
-        # Показываем соответствующее меню
-        if user.role == "tutor":
-            await callback.message.edit_text(
-                text="👋 Главное меню репетитора:",
-                reply_markup=tutor_main_menu()
-            )
 
 @tutor_router.callback_query(lambda c: c.data == "back_to_tutor_students")
 async def handle_back_to_tutor_students(callback: types.CallbackQuery, state: FSMContext):
