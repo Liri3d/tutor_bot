@@ -91,11 +91,13 @@ async def get_invite_by_code(
 
 async def mark_invite_as_used(
     session: AsyncSession,
-    invite: Invite
+    invite: Invite,
+    student_telegram_id: int
 ) -> None:
     """Отметить приглашение как использованное"""
     invite.is_used = True
     invite.used_at = datetime.now()
+    invite.student_telegram_id = student_telegram_id  # Сохраняем ID ученика
     await session.commit()
 
 

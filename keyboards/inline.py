@@ -10,11 +10,11 @@ def role_keyboard():
                     callback_data="role_tutor"
                 )
             ],
-            [
-                InlineKeyboardButton(
-                    text="Ученик",
-                    callback_data="role_student"
-                )
-            ]
+            # [
+            #     InlineKeyboardButton(
+            #         text="Ученик",
+            #         callback_data="role_student"
+            #     )
+            # ]
         ]
     )
