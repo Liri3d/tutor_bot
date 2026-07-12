@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove
 
-from states.register_states import RegisterStates
+from tutor_bot.states.states import RegisterStates
 from keyboards.inline import role_keyboard
 from db.session import get_session
 from db.crud import get_user_by_telegram_id, create_user
@@ -96,30 +96,6 @@ async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
     )
 
     await state.set_state(RegisterStates.waiting_for_invite)
-
-
-
-
-
-
-# @common_router.message(RegisterStates.waiting_for_invite)
-# async def handle_invite_input(message: types.Message, state: FSMContext):
-#     """Пользователь ввел инвайт-код"""
-#     invite_code = message.text.strip()
-    
-#     await message.answer(
-#         f"🔑 Вы ввели код: `{invite_code}`\n\n"
-#         "Позже мы добавим проверку кода и подключение к репетитору."
-#     )
-    
-#     await message.answer(
-#         "Вы успешно подключились к репетитору!\n\n"
-#         "Выберите действие:",
-#         reply_markup=student_main_menu()
-#     )
-
-#     await state.clear()
-
 
 
 
