@@ -97,42 +97,6 @@ async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
 
     await state.set_state(RegisterStates.waiting_for_invite)
 
-
-
-
-
-
-# @common_router.message(RegisterStates.waiting_for_invite)
-# async def handle_invite_input(message: types.Message, state: FSMContext):
-#     """Пользователь ввел инвайт-код"""
-#     invite_code = message.text.strip()
-    
-#     await message.answer(
-#         f"🔑 Вы ввели код: `{invite_code}`\n\n"
-#         "Позже мы добавим проверку кода и подключение к репетитору."
-#     )
-    
-#     await message.answer(
-#         "Вы успешно подключились к репетитору!\n\n"
-#         "Выберите действие:",
-#         reply_markup=student_main_menu()
-#     )
-
-#     await state.clear()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @common_router.callback_query(lambda c: c.data == "change_role_confirm")
 async def handle_change_role_confirm(callback: types.CallbackQuery, state: FSMContext):
     """Запрос подтверждения смены роли"""
