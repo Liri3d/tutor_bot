@@ -1,6 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-
 def role_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[

@@ -5,7 +5,7 @@ from aiogram.types import ReplyKeyboardRemove
 import logging
 
 from states import RegisterStates
-from keyboards.inline import role_keyboard
+from keyboards import role_keyboard
 from db.session import get_session
 from db.crud import (
     get_user_by_telegram_id,
