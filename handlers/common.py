@@ -51,17 +51,9 @@ async def cmd_start(message: types.Message, state: FSMContext):
         user = await get_user_by_telegram_id(session, message.from_user.id)
 
         if invite_code:
-            # Проверяем, что пользователь ещё не зарегистрирован
-            if user:
-                await message.answer(
-                    "❌ Вы уже зарегистрированы.\n"
-                    # "Если вы хотите подключиться к другому репетитору, обратитесь к нему за новым приглашением."
-                )
-                return
-            
             # Проверяем приглашение
             invite = await get_invite_by_code(session, invite_code)
-            
+
             if not invite:
                 await message.answer(
                     "❌ Недействительный код приглашения.\n\n"
@@ -69,7 +61,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
                     "Пожалуйста, проверьте код и попробуйте снова."
                 )
                 return
-            
+
             # Проверяем, не пытается ли пользователь подключиться к самому себе
             tutor = await get_user_by_id(session, invite.tutor_id)
             if tutor and tutor.telegram_id == message.from_user.id:
@@ -78,6 +70,116 @@ async def cmd_start(message: types.Message, state: FSMContext):
                 )
                 return
             
+            # Проверяем, что пользователь ещё не зарегистрирован
+            if user:
+                # Случай 1: Пользователь — репетитор
+                if user.role == "tutor":
+                    await message.answer(
+                        "❌ Вы уже зарегистрированы как репетитор.\n\nЧтобы подключиться к другому репетитору как ученик, ",
+                        "смените свою роль в настройках: '/settings' → 'Сменить роль на ученика'",
+                        # "Если вы хотите подключиться к другому репетитору, обратитесь к нему за новым приглашением."
+                        parse_mode="Markdown"
+                    )
+                    return
+                # Случай 2: Пользователь — ученик
+                if user.role == "student":
+                    # Проверяем, не подключён ли уже к этому репетитору
+                    existing_relationship = await get_relationship(
+                        session,
+                        invite.tutor_id,
+                        user.id
+                    )
+                    
+                    if existing_relationship:
+                        await message.answer(
+                            f"✅ Вы уже подключены к репетитору {tutor.first_name or 'репетитору'}!"
+                        )
+                        await message.answer(
+                            "Выберите действие:",
+                            reply_markup=student_main_menu()
+                        )
+                        return
+                    
+                    # Подключаем существующего ученика к новому репетитору
+                    relationship = await create_relationship(
+                        session=session,
+                        tutor_id=invite.tutor_id,
+                        student_id=user.id
+                    )
+                    
+                    # Отмечаем приглашение как использованное
+                    await mark_invite_as_used(session, invite, user.telegram_id)
+                    
+                    await message.answer(
+                        f"✅ Вы успешно подключились к репетитору {tutor.first_name or 'репетитору'}!"
+                    )
+                    
+                    # Уведомляем репетитора
+                    try:
+                        await message.bot.send_message(
+                            tutor.telegram_id,
+                            f"🎉 К вам подключился новый ученик!\n\n"
+                            f"👤 {user.first_name or 'Без имени'}"
+                            f"{' (@' + user.username + ')' if user.username else ''}"
+                        )
+                    except Exception as e:
+                        logging.error(f"Не удалось уведомить репетитора: {e}")
+                    
+                    await message.answer(
+                        "Выберите действие:",
+                        reply_markup=student_main_menu()
+                    )
+                    
+                    await state.clear()
+                    return
+        
+
+                # Случай 3: Пользователь не зарегистрирован — создаём
+                student = await create_user(
+                    session=session,
+                    telegram_id=message.from_user.id,
+                    username=message.from_user.username,
+                    first_name=message.from_user.first_name,
+                    role="student"
+                )
+                
+                # Создаём связь
+                relationship = await create_relationship(
+                    session=session,
+                    tutor_id=invite.tutor_id,
+                    student_id=student.id
+                )
+                
+                # Отмечаем приглашение как использованное
+                await mark_invite_as_used(session, invite, student.telegram_id)
+                
+                # Уведомляем ученика
+                await message.answer(
+                    f"✅ Вы успешно подключились к репетитору **{tutor.first_name or 'репетитору'}**!\n\n"
+                    "Теперь вы можете просматривать свои занятия и баланс.",
+                    parse_mode="Markdown"
+                )
+                
+                # Уведомляем репетитора
+                try:
+                    await message.bot.send_message(
+                        tutor.telegram_id,
+                        f"🎉 К вам подключился новый ученик!\n\n"
+                        f"👤 {student.first_name or 'Без имени'}"
+                        f"{' (@' + student.username + ')' if student.username else ''}"
+                    )
+                except Exception as e:
+                    logging.error(f"Не удалось уведомить репетитора: {e}")
+                
+                # Показываем меню ученика
+                await message.answer(
+                    "Выберите действие:",
+                    reply_markup=student_main_menu()
+                )
+                
+                await state.clear()
+                return
+                        
             # Создаём ученика
             student = await create_user(
                 session=session,
@@ -99,7 +201,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
             
             # Уведомляем ученика
             await message.answer(
-                f"✅ Вы успешно подключились к репетитору **{tutor.first_name or 'репетитору'}**!\n\n"
+                f"✅ Вы успешно подключились к репетитору {tutor.first_name or 'репетитору'}!\n\n"
                 "Теперь вы можете просматривать свои занятия и баланс.",
                 parse_mode="Markdown"
             )
@@ -147,28 +249,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
             "Вы ученик или репетитор?",
             reply_markup=role_keyboard()
         )
-        
-    #     if user:
-    #         if user.role == "tutor":
-    #             await message.answer(
-    #                 f"👋 С возвращением, {user.first_name or 'репетитор'}!\n\nВыберите действие:",
-    #                 reply_markup=tutor_main_menu()
-    #             )
-    #             return
-    #         else:
-    #             await message.answer(
-    #                 f"👋 С возвращением, {user.first_name or 'ученик'}!\n\nВыберите действие:",
-    #                 reply_markup=student_main_menu()
-    #             )
-    #             return
-
-    # await state.set_state(RegisterStates.waiting_for_role)
-    # await message.answer(
-    #     "👋 Добро пожаловать в Tutor Bot!\n\n"
-    #     "Я помогу вам управлять своим расписанием.\n\n"
-    #     "Вы ученик или репетитор?",
-    #     reply_markup=role_keyboard()
-    # )
 
 @common_router.callback_query(lambda c: c.data == "role_tutor")
 async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
