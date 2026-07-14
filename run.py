@@ -28,7 +28,7 @@ async def run_api():
     """Запуск FastAPI"""
     env = ENVIRONMENT
     host = "0.0.0.0" if env == "production" else "localhost"
-    config = uvicorn.Config(app, host=host, port=8000, loop="asyncio")
+    config = uvicorn.Config(app, host=host, port=80, loop="asyncio")
     server = uvicorn.Server(config)
     await server.serve()
 
