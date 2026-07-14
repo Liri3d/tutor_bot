@@ -22,23 +22,3 @@ def confirm_change_role_menu() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="❌ Отмена", callback_data="change_role_no")],
         ]
     )
-
-# def change_role_keyboard():
-#     return InlineKeyboardMarkup(
-#             inline_keyboard=[
-#                 [
-#                     InlineKeyboardButton(
-#                         text=f"🔄 На репетитора" if user.role == "student" else "🔄 На ученика",
-#                         callback_data="confirm_change_role"
-#                     )
-#                 ],
-#                 [
-#                     InlineKeyboardButton(
-#                         text="❌ Отмена",
-#                         callback_data="cancel_change_role"
-#                     )
-#                 ]
-#             ]
-#         )
-
-

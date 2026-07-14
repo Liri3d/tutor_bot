@@ -6,3 +6,4 @@ venv/
 .vscode/
 *.db
 doc/
+project_context.txt

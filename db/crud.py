@@ -9,7 +9,7 @@ from .models import User, Invite, Relationship
 
 # ============ USER ============
 
-async def get_user_by_telegram_id(
+async def db_get_user_by_telegram_id(
     session: AsyncSession,
     telegram_id: int
 ) -> Optional[User]:
@@ -19,7 +19,7 @@ async def get_user_by_telegram_id(
     return result.scalar_one_or_none()
 
 
-async def get_user_by_id(
+async def db_get_user_by_id(
     session: AsyncSession,
     user_id: int
 ) -> Optional[User]:
@@ -29,7 +29,7 @@ async def get_user_by_id(
     return result.scalar_one_or_none()
 
 
-async def create_user(
+async def db_create_user(
     session: AsyncSession,
     telegram_id: int,
     role: str,
@@ -51,7 +51,7 @@ async def create_user(
 
 # ============ INVITE ============
 
-async def create_invite(
+async def db_create_invite(
     session: AsyncSession,
     tutor_id: int,
     student_name: str,
@@ -73,7 +73,7 @@ async def create_invite(
     return invite
 
 
-async def get_invite_by_code(
+async def db_get_invite_by_code(
     session: AsyncSession,
     code: str
 ) -> Optional[Invite]:
@@ -89,19 +89,21 @@ async def get_invite_by_code(
     return result.scalar_one_or_none()
 
 
-async def mark_invite_as_used(
+async def db_mark_invite_as_used(
     session: AsyncSession,
-    invite: Invite
+    invite: Invite,
+    student_telegram_id: int
 ) -> None:
     """Отметить приглашение как использованное"""
     invite.is_used = True
     invite.used_at = datetime.now()
+    invite.student_telegram_id = student_telegram_id  # Сохраняем ID ученика
     await session.commit()
 
 
 # ============ RELATIONSHIP ============
 
-async def get_relationship(
+async def db_get_relationship(
     session: AsyncSession,
     tutor_id: int,
     student_id: int
@@ -117,7 +119,7 @@ async def get_relationship(
     return result.scalar_one_or_none()
 
 
-async def create_relationship(
+async def db_create_relationship(
     session: AsyncSession,
     tutor_id: int,
     student_id: int
@@ -133,7 +135,7 @@ async def create_relationship(
     return relationship
 
 
-async def get_active_relationships_for_tutor(
+async def db_get_active_relationships_for_tutor(
     session: AsyncSession,
     tutor_id: int
 ) -> list[Relationship]:
