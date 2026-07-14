@@ -17,12 +17,19 @@
             <!-- Форма ввода Telegram ID -->
             <section id="auth-section">
                 <h2>Вход</h2>
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label for="telegram-id">Ваш Telegram ID:</label>
                     <input type="number" id="telegram-id" placeholder="123456789">
                     <button id="login-btn">Войти</button>
+                </div> -->
+                
+                <div class="form-group">
+                    <label for="telegram-id">Telegram ID (старый способ)</label>
+                    <input type="number" id="telegram-id" placeholder="123456789">
+                    <small class="hint">Получите ID через @userinfobot</small>
                 </div>
-                <p class="hint">Получите свой Telegram ID через @userinfobot</p>
+                <button id="login-btn" class="btn-primary">🔐 Войти по ID</button>
+                <div id="login-error" class="error-message"></div>
             </section>
 
             <!-- Основной контент -->

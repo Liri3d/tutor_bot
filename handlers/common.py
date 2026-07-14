@@ -263,7 +263,7 @@ async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.edit_text(await MessageService.get_error_message("user_not_found"))
             return
         
-        text, keyboard = await MessageService.get_main_mune_message()
+        text, keyboard = await MessageService.get_main_mune_message(user)
 
         # Показываем соответствующее меню
         await callback.message.edit_text(
