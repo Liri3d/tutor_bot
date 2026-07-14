@@ -7,13 +7,20 @@ def settings_menu(current_role: str) -> InlineKeyboardMarkup:
     """
     role_text = "🔄 Сменить роль на Ученик" if current_role == "tutor" else "🔄 Сменить роль на Репетитор"
     
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text=role_text, callback_data="change_role_confirm")],
-            [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_main")],
-        ]
-    )
-
+    if current_role == "tutor":
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text=role_text, callback_data="change_role_confirm")],
+                [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_main")],
+            ]
+        )
+    else:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_main")],
+            ]
+        )
+    
 def confirm_change_role_menu() -> InlineKeyboardMarkup:
     """Подтверждение смены роли"""
     return InlineKeyboardMarkup(

@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    
     const loginBtn = document.getElementById('login-btn');
     const createInviteBtn = document.getElementById('create-invite-btn');
 
@@ -164,6 +163,12 @@ async function loadInvites(tutorId) {
                     <span class="student-name">${invite.student_name}</span>
                     <span class="invite-code">${invite.code}</span>
                 </div>
+                
+                <div class="invite-actions">
+                    <!-- 🔗 Используем ссылку из API -->
+                    <button onclick="copyInviteLink('${invite.link}')" class="copy-btn">🔗 Копировать ссылку</button>
+                </div>
+                
                 <span class="invite-expires">
                     до ${new Date(invite.expires_at).toLocaleDateString('ru-RU')}
                 </span>
@@ -176,60 +181,60 @@ async function loadInvites(tutorId) {
     }
 }
 
-// // ========== СОЗДАНИЕ ПРИГЛАШЕНИЯ ==========
+// ========== СОЗДАНИЕ ПРИГЛАШЕНИЯ ==========
 
-// async function handleCreateInvite() {
-//     const input = document.getElementById('student-name');
-//     const studentName = input.value.trim();
-//     const resultDiv = document.getElementById('invite-result');
+async function handleCreateInvite() {
+    const input = document.getElementById('student-name');
+    const studentName = input.value.trim();
+    const resultDiv = document.getElementById('invite-result');
 
-//     if (!studentName) {
-//         resultDiv.innerHTML = '<p class="error">Введите имя ученика</p>';
-//         return;
-//     }
+    if (!studentName) {
+        resultDiv.innerHTML = '<p class="error">Введите имя ученика</p>';
+        return;
+    }
 
-//     if (!currentTutorId) {
-//         resultDiv.innerHTML = '<p class="error">Сначала войдите в систему</p>';
-//         return;
-//     }
+    if (!currentTutorId) {
+        resultDiv.innerHTML = '<p class="error">Сначала войдите в систему</p>';
+        return;
+    }
 
-//     const btn = document.getElementById('create-invite-btn');
-//     btn.disabled = true;
-//     resultDiv.innerHTML = '<p class="loading">Создание приглашения...</p>';
+    const btn = document.getElementById('create-invite-btn');
+    btn.disabled = true;
+    resultDiv.innerHTML = '<p class="loading">Создание приглашения...</p>';
 
-//     try {
-//         const response = await fetch(
-//             `${API_BASE}/tutors/${currentTutorId}/invites?student_name=${encodeURIComponent(studentName)}`,
-//             { method: 'POST' }
-//         );
+    try {
+        const response = await fetch(
+            `${API_BASE}/tutors/${currentTutorId}/invites?student_name=${encodeURIComponent(studentName)}`,
+            { method: 'POST' }
+        );
 
-//         const data = await response.json();
+        const data = await response.json();
 
-//         if (response.ok) {
-//             resultDiv.innerHTML = `
-//                 <div class="success">
-//                     ✅ Приглашение создано!
-//                     <br>
-//                     Код: <strong>${data.code}</strong>
-//                     <br>
-//                     <small>Скопируйте ссылку:</small>
-//                     <br>
-//                     <input type="text" value="${data.link}" style="width: 100%; margin-top: 5px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px;" readonly onclick="this.select()">
-//                 </div>
-//             `;
-//             input.value = '';
-//             await loadInvites(currentTutorId);
-//         } else {
-//             resultDiv.innerHTML = `<p class="error">❌ ${data.detail || 'Ошибка создания приглашения'}</p>`;
-//         }
+        if (response.ok) {
+            resultDiv.innerHTML = `
+                <div class="success">
+                    ✅ Приглашение создано!
+                    <br>
+                    Код: <strong>${data.code}</strong>
+                    <br>
+                    <small>Скопируйте ссылку:</small>
+                    <br>
+                    <input type="text" value="${data.link}" style="width: 100%; margin-top: 5px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px;" readonly onclick="this.select()">
+                </div>
+            `;
+            input.value = '';
+            await loadInvites(currentTutorId);
+        } else {
+            resultDiv.innerHTML = `<p class="error">❌ ${data.detail || 'Ошибка создания приглашения'}</p>`;
+        }
 
-//     } catch (error) {
-//         console.error('Ошибка создания приглашения:', error);
-//         resultDiv.innerHTML = '<p class="error">Ошибка подключения к серверу</p>';
-//     } finally {
-//         btn.disabled = false;
-//     }
-// }
+    } catch (error) {
+        console.error('Ошибка создания приглашения:', error);
+        resultDiv.innerHTML = '<p class="error">Ошибка подключения к серверу</p>';
+    } finally {
+        btn.disabled = false;
+    }
+}
 
 // // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 
@@ -251,3 +256,57 @@ document.getElementById('logout-btn')?.addEventListener('click', () => {
     document.getElementById('dashboard-section').style.display = 'none';
     document.getElementById('telegram-id').value = '';
 });
+
+function copyInviteLink(link) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(link)
+            .then(() => showToast('✅ Ссылка скопирована!'))
+            .catch(() => copyTextManually(link));
+    } else {
+        copyTextManually(link);
+    }
+}
+
+function copyTextManually(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(textarea);
+    textarea.select();
+    
+    try {
+        document.execCommand('copy');
+        showToast('✅ Ссылка скопирована!');
+    } catch (err) {
+        alert('❌ Не удалось скопировать. Скопируйте вручную:\n' + text);
+    }
+    document.body.removeChild(textarea);
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #2d3748;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => { toast.style.opacity = '1'; }, 10);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
