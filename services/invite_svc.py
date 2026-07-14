@@ -79,32 +79,32 @@ class InviteService:
     #     """
     #     await mark_invite_as_used(session, invite, student_telegram_id)
 
-    # @staticmethod
-    # async def get_active_invites_for_tutor(
-    #     session: AsyncSession,
-    #     tutor_id: int
-    # ) -> list[Invite]:
-    #     """
-    #     Получить все активные (неиспользованные и не истекшие) инвайты репетитора.
+    @staticmethod
+    async def get_active_invites_for_tutor(
+        session: AsyncSession,
+        tutor_id: int
+    ) -> list[Invite]:
+        """
+        Получить все активные (неиспользованные и не истекшие) инвайты репетитора.
         
-    #     Args:
-    #         session: Сессия БД
-    #         tutor_id: ID репетитора
+        Args:
+            session: Сессия БД
+            tutor_id: ID репетитора
         
-    #     Returns:
-    #         list[Invite]: Список активных инвайтов
-    #     """
-    #     from sqlalchemy import select, and_
+        Returns:
+            list[Invite]: Список активных инвайтов
+        """
+        from sqlalchemy import select, and_
         
-    #     stmt = select(Invite).where(
-    #         and_(
-    #             Invite.tutor_id == tutor_id,
-    #             Invite.is_used == False,
-    #             Invite.expires_at > datetime.now()
-    #         )
-    #     )
-    #     result = await session.execute(stmt)
-    #     return result.scalars().all()
+        stmt = select(Invite).where(
+            and_(
+                Invite.tutor_id == tutor_id,
+                Invite.is_used == False,
+                Invite.expires_at > datetime.now()
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
     # @staticmethod
     # async def get_invite_by_code(

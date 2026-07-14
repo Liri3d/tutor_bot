@@ -141,9 +141,9 @@ async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
 
 @common_router.message(RegisterStates.waiting_for_invite)
 async def handle_invite_input(message: types.Message, state: FSMContext):
-    """Ученик вводит код приглашения"""
+    """Ученик переходит по ссылке-приглашению"""
     invite_code = message.text.strip()
-    # TODO
+
     async for session in SessionService.get_session():
         try:
             # Регистрируем ученика через сервис
