@@ -5,7 +5,36 @@ let currentTutorId = null;
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Проверяем сохраненного пользователя
+    const savedUser = localStorage.getItem('tutor_user');
+    
+    if (savedUser) {
+        try {
+            const user = JSON.parse(savedUser);
+            
+            // Проверяем, существует ли пользователь в БД
+            const response = await fetch(`${API_BASE}/tutors/${user.telegram_id}/check`);
+            const data = await response.json();
+            
+            if (data.exists) {
+                // Восстанавливаем сессию
+                currentTutorId = user.telegram_id;
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'block';
+                await loadDashboard(user.telegram_id);
+                return;
+            } else {
+                // Пользователь удалён из БД
+                localStorage.removeItem('tutor_user');
+            }
+        } catch (e) {
+            console.error('Ошибка восстановления сессии:', e);
+            localStorage.removeItem('tutor_user');
+        }
+    }
+    
+    
     const loginBtn = document.getElementById('login-btn');
     const createInviteBtn = document.getElementById('create-invite-btn');
 
@@ -42,6 +71,14 @@ async function handleLogin() {
             alert('Репетитор с таким Telegram ID не найден в системе.\n\nСначала зарегистрируйтесь в боте: @tutortesting_bot');
             return;
         }
+
+        // Сохраняем пользователя
+        const userData = {
+            telegram_id: telegramId,
+            name: data.name,
+            students_count: data.students_count
+        };
+        localStorage.setItem('tutor_user', JSON.stringify(userData));
 
         currentTutorId = telegramId;
         document.getElementById('auth-section').style.display = 'none';
@@ -204,3 +241,13 @@ async function loadInvites(tutorId) {
 //         year: 'numeric'
 //     });
 // }
+
+// ========== ВЫХОД ==========
+
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+    localStorage.removeItem('tutor_user');
+    currentTutorId = null;
+    document.getElementById('auth-section').style.display = 'block';
+    document.getElementById('dashboard-section').style.display = 'none';
+    document.getElementById('telegram-id').value = '';
+});

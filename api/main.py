@@ -53,33 +53,33 @@ async def serve_index():
 
 # # ========== API ЭНДПОИНТЫ ==========
 
-# @app.get("/api/tutors/{telegram_id}/students", response_model=List[StudentResponse])
-# async def get_tutor_students(
-#     telegram_id: int,
-#     session: AsyncSession = Depends(SessionService.get_session)
-# ):
-#     """
-#     Получить всех учеников репетитора.
-#     """
-#     tutor = await UserService.get_user_by_telegram_id(session, telegram_id)
-#     if not tutor or tutor.role != "tutor":
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="Репетитор не найден"
-#         )
+@app.get("/api/tutors/{telegram_id}/students", response_model=List[StudentResponse])
+async def get_tutor_students(
+    telegram_id: int,
+    session: AsyncSession = Depends(SessionService.get_session)
+):
+    """
+    Получить всех учеников репетитора.
+    """
+    tutor = await UserService.get_user_by_telegram_id(session, telegram_id)
+    if not tutor or tutor.role != "tutor":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Репетитор не найден"
+        )
     
-#     students = await RelationshipService.get_tutor_students(session, tutor.id)
+    students = await RelationshipService.get_tutor_students(session, tutor.id)
     
-#     return [
-#         StudentResponse(
-#             id=student.id,
-#             telegram_id=student.telegram_id,
-#             first_name=student.first_name or "Без имени",
-#             username=student.username,
-#             registered_at=student.registered_at
-#         )
-#         for student in students
-#     ]
+    return [
+        StudentResponse(
+            id=student.id,
+            telegram_id=student.telegram_id,
+            first_name=student.first_name or "Без имени",
+            username=student.username,
+            registered_at=student.registered_at
+        )
+        for student in students
+    ]
 
 
 @app.get("/api/tutors/{telegram_id}/stats", response_model=TutorStatsResponse)
