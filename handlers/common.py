@@ -180,10 +180,10 @@ async def handle_invite_input(message: types.Message, state: FSMContext):
         except ValueError as e:
             await message.answer(f"❌ {str(e)}")
 
-# @common_router.callback_query(lambda c: c.data == "change_role_confirm")
-# async def handle_change_role_confirm(callback: types.CallbackQuery, state: FSMContext):
-#     """Запрос подтверждения смены роли"""
-#     await callback.answer()
+@common_router.callback_query(lambda c: c.data == "change_role_confirm")
+async def handle_change_role_confirm(callback: types.CallbackQuery, state: FSMContext):
+    """Запрос подтверждения смены роли"""
+    await callback.answer()
     
 #     async for session in get_session():
 #         user = await get_user_by_telegram_id(session, callback.from_user.id)
