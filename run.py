@@ -1,12 +1,11 @@
-# run.py
-
+import os
 import asyncio
 import uvicorn
 import logging
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, ENVIRONMENT
 from handlers.common import common_router
 from handlers.tutor import tutor_router
 from services import SessionService
@@ -27,7 +26,9 @@ async def run_bot():
 
 async def run_api():
     """Запуск FastAPI"""
-    config = uvicorn.Config(app, host="localhost", port=8000, loop="asyncio") # 0.0.0.0
+    env = ENVIRONMENT
+    host = "0.0.0.0" if env == "production" else "localhost"
+    config = uvicorn.Config(app, host=host, port=8000, loop="asyncio")
     server = uvicorn.Server(config)
     await server.serve()
 
