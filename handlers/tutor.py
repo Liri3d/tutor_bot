@@ -1,7 +1,5 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
-
-# from db import *
     
 from keyboards import (
     settings_menu,
@@ -140,27 +138,6 @@ async def handle_student_name_input(message: types.Message, state: FSMContext):
         await message.answer(
             "Меню репетитора:",
             reply_markup=tutor_main_menu()
-        )
-
-@tutor_router.callback_query(lambda c: c.data == "settings_menu")
-async def handle_settings_menu(callback: types.CallbackQuery, state: FSMContext):
-    """Открыть меню настроек"""
-    await callback.answer()
-    
-    async for session in SessionService.get_session():
-        user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
-        
-        if not user:
-            await callback.message.edit_text(await MessageService.get_error_message("user_not_found"))
-            return
-        
-        settings_text = await MessageService.get_settings_message(user)
-
-        # Показываем меню настроек
-        await callback.message.edit_text(
-            text=settings_text,
-            reply_markup=settings_menu(user.role),
-            parse_mode="Markdown"
         )
 
 @tutor_router.callback_query(lambda c: c.data == "back_to_tutor_students")
