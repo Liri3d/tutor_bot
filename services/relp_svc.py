@@ -1,12 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import (
-    get_relationship,
-    create_relationship,
-    get_active_relationships_for_tutor,
-    get_user_by_id,
-)
+from db.crud import *
 from db.models import User, Relationship
 
 
@@ -29,11 +24,11 @@ class RelationshipService:
             List[User]: Список учеников
         """
         # Получаем все активные связи
-        relationships = await get_active_relationships_for_tutor(session, tutor_id)
+        relationships = await db_get_active_relationships_for_tutor(session, tutor_id)
         
         students = []
         for rel in relationships:
-            student = await get_user_by_id(session, rel.student_id)
+            student = await db_get_user_by_id(session, rel.student_id)
             if student:
                 students.append(student)
         

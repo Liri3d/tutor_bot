@@ -5,9 +5,9 @@ from aiogram.filters import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
-from handlers.common import common_router
-from handlers.tutor import tutor_router
-from db.session import init_db
+from handlers import *
+
+from services import *
 
 # Включаем логирование (чтобы видеть ошибки)
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +22,7 @@ dp.include_router(tutor_router)
 
 
 async def main():
-    await init_db()
+    await SessionService.init_db()
 
     print("🚀 Бот запущен!")
     await dp.start_polling(bot)

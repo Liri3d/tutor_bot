@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import get_invite_by_code, mark_invite_as_used
+from db.crud import *
 from db.models import Invite
 
 

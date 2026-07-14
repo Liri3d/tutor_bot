@@ -1,14 +1,7 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardRemove
 
-from db import (
-    get_session,
-    get_user_by_id,
-    get_user_by_telegram_id,
-    get_active_relationships_for_tutor,
-)
+# from db import *
     
 from keyboards import (
     settings_menu,
@@ -18,9 +11,35 @@ from keyboards import (
 )
 
 from states import TutorStates
-from services import InviteService, RelationshipService, UserService
+from services import *
 
 tutor_router = Router()
+
+async def _show_students_list(
+    callback: types.CallbackQuery,
+    session,
+    user
+) -> None:
+    """
+    Общая логика показа списка учеников.
+    Используется в handle_tutor_students и handle_back_to_tutor_students.
+    """
+    students = await RelationshipService.get_tutor_students(session, user.id)
+
+    if students:
+        response_text = await MessageService.format_student_list(students)
+        keyboard = build_students_keyboard(students, user.id)
+        
+        await callback.message.edit_text(
+            text=response_text,
+            reply_markup=keyboard,
+            parse_mode="Markdown"
+        )
+    else:
+        await callback.message.edit_text(
+            text=await MessageService.get_error_message("no_students"),
+            reply_markup=tutor_main_menu()
+        )
 
 @tutor_router.callback_query(lambda c: c.data == "tutor_students")
 async def handle_tutor_students(callback: types.CallbackQuery, state: FSMContext):
@@ -28,29 +47,14 @@ async def handle_tutor_students(callback: types.CallbackQuery, state: FSMContext
     await callback.answer()
     
     # Проверяем, что пользователь — репетитор
-    async for session in get_session():
-        user = await get_user_by_telegram_id(session, callback.from_user.id)
+    async for session in SessionService.get_session():
+        user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
         if not user or user.role != "tutor":
-            await callback.message.edit_text("❌ Только репетитор может просмотреть список учеников.")
+            await callback.message.edit_text(await MessageService.get_error_message("permission_denied"))
             return
-    
-        # Получаем учеников через сервис
-        students = await RelationshipService.get_tutor_students(session, user.id)
 
-        if students:
-            response_text = f"👤 **Ваши ученики**\n\nВсего: {len(students)}"
-            keyboard = build_students_keyboard(students, user.id)
-            await callback.message.edit_text(
-                text=response_text,
-                reply_markup=keyboard,
-                parse_mode="Markdown"
-            )
-        else:
-            await callback.message.edit_text(
-                text="👤 У вас пока нет учеников.\n\nСоздайте приглашение, чтобы добавить ученика.",
-                reply_markup=tutor_main_menu()
-            )
-    
+        await _show_students_list(callback, session, user)
+
 @tutor_router.callback_query(lambda c: c.data and c.data.startswith("student_"))
 async def handle_student_click(callback: types.CallbackQuery, state: FSMContext):
     """Обработка нажатия на кнопку ученика"""
@@ -59,21 +63,24 @@ async def handle_student_click(callback: types.CallbackQuery, state: FSMContext)
     # Извлекаем ID ученика из callback_data
     student_id = int(callback.data.split("_")[1])
     
-    async for session in get_session():
-        # Получаем ученика через сервис
-        student = await UserService.get_user_by_id(session, student_id)
-        
-        if not student:
-            await callback.message.edit_text("❌ Ученик не найден.")
+    async for session in SessionService.get_session():
+        if not await UserService.is_tutor(session, callback.from_user.id):
+            await callback.message.edit_text(
+                await MessageService.get_error_message("permission_denied")
+            )
             return
         
+        # Получаем ученика через сервис   
+        student = await UserService.get_user_by_id(session, student_id)
+        if not student:
+            await callback.message.edit_text(await MessageService.get_error_message("student_not_found"))
+            return
+        
+        student_info = await MessageService.format_student_detail(student)
+
         # Показываем информацию об ученике (заглушка)
         await callback.message.edit_text(
-            f"📋 **Информация об ученике**\n\n"
-            f"👤 Имя: {student.first_name or 'Не указано'}\n"
-            f"🔗 Username: @{student.username if student.username else 'Нет'}\n"
-            f"📅 Зарегистрирован: {student.registered_at.strftime('%d.%m.%Y %H:%M')}\n\n"
-            f"Здесь будут занятия и управление учеником.",
+            text = student_info,
             parse_mode="Markdown",
             reply_markup=student_detail_menu(student_id)
         )
@@ -84,15 +91,13 @@ async def handle_tutor_invite(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     
     # Проверяем, что пользователь — репетитор
-    async for session in get_session():
-        user = await get_user_by_telegram_id(session, callback.from_user.id)
-        if not user or user.role != "tutor":
-            await callback.message.edit_text("❌ Только репетитор может приглашать учеников.")
+    async for session in SessionService.get_session():
+        if not await UserService.is_tutor(session, callback.from_user.id):
+            await MessageService.get_error_message("permission_denied")
             return
     
     await callback.message.edit_text(
-        "👤 Пригласить ученика\n\n"
-        "Введите имя ученика, которого хотите пригласить:"
+        await MessageService.get_invite_prompt()
     )
     await state.set_state(TutorStates.waiting_for_student_name)
 
@@ -103,15 +108,15 @@ async def handle_student_name_input(message: types.Message, state: FSMContext):
     
     if len(student_name) < 2:
         await message.answer(
-            "❌ Имя должно содержать хотя бы 2 символа. Попробуйте снова:"
+            await MessageService.get_error_message("invalid_name")
         )
         return
     
-    async for session in get_session():
+    async for session in SessionService.get_session():
         # Получаем репетитора
-        tutor = await get_user_by_telegram_id(session, message.from_user.id)
+        tutor = await UserService.get_user_by_telegram_id(session, message.from_user.id)
         if not tutor:
-            await message.answer("❌ Пользователь не найден.")
+            await message.answer(await MessageService.get_error_message("user_not_found"))
             await state.clear()
             return
         
@@ -119,21 +124,13 @@ async def handle_student_name_input(message: types.Message, state: FSMContext):
             session=session,
             tutor_id=tutor.id,
             student_name=student_name,
-            expires_in_days=1  # 24 часа
+            expires_in_days=1  
         )
         
         # Формируем сообщение
         bot_username = (await message.bot.get_me()).username
-        
         await message.answer(
-            f"✅ Приглашение создано!\n\n"
-            f"👤 Ученик: {student_name}\n"
-            f"🔑 Код: `{invite.code}`\n"
-            f"📅 Действительно до: {invite.expires_at.strftime('%d.%m.%Y %H:%M')}\n\n"
-            f"Отправьте ученику эту ссылку:\n"
-            f"`https://t.me/{bot_username}?start=invite_{invite.code}`\n\n"
-            f"ℹ️ Ссылка действительна 24 часа.\n"
-            f"ℹ️ После использования ссылка становится недействительной.",
+            await MessageService.format_invite(invite, bot_username),
             parse_mode="Markdown"
         )
         
@@ -150,20 +147,20 @@ async def handle_settings_menu(callback: types.CallbackQuery, state: FSMContext)
     """Открыть меню настроек"""
     await callback.answer()
     
-    async for session in get_session():
-        user = await get_user_by_telegram_id(session, callback.from_user.id)
+    async for session in SessionService.get_session():
+        user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
         
         if not user:
-            await callback.message.edit_text("❌ Пользователь не найден.")
+            await callback.message.edit_text(await MessageService.get_error_message("user_not_found"))
             return
         
+        settings_text = await MessageService.get_settings_message(user)
+
         # Показываем меню настроек
         await callback.message.edit_text(
-            text=f"⚙️ Настройки\n\n"
-                 f"👤 Ваша роль: {user.role}\n"
-                 f"📅 Зарегистрирован: {user.registered_at.strftime('%d.%m.%Y')}\n\n"
-                 f"Здесь вы можете изменить свои настройки.",
-            reply_markup=settings_menu(user.role)
+            text=settings_text,
+            reply_markup=settings_menu(user.role),
+            parse_mode="Markdown"
         )
 
 @tutor_router.callback_query(lambda c: c.data == "back_to_tutor_students")
@@ -171,5 +168,14 @@ async def handle_back_to_tutor_students(callback: types.CallbackQuery, state: FS
     """Вернуться к просмотру списка учеников"""
     await callback.answer()
     
-    # Просто вызываем обработчик списка учеников
-    await handle_tutor_students(callback, state)
+    async for session in SessionService.get_session():
+        if not await UserService.is_tutor(session, callback.from_user.id):
+            await callback.message.edit_text(
+                await MessageService.get_error_message("permission_denied")
+            )
+            return
+        
+        user = await UserService.get_user_by_telegram_id(
+            session, callback.from_user.id
+        )
+        await _show_students_list(callback, session, user)

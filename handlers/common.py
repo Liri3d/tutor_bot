@@ -6,10 +6,6 @@ import logging
 
 from states import RegisterStates
 from keyboards import role_keyboard
-from db.session import get_session
-from db.crud import (
-    get_user_by_telegram_id
-)
 
 from keyboards import (
     tutor_main_menu,
@@ -41,7 +37,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
 
-    async for session in get_session():
+    async for session in SessionService.get_session():
         user = await UserService.get_user_by_telegram_id(
             session, message.from_user.id
         ) 
@@ -88,11 +84,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
             welcome_text, welcome_keyboard = await MessageService.get_welcome_message(user)
             await message.answer(welcome_text, reply_markup=welcome_keyboard)
             
-            # if user.role == "tutor":
-            #     await message.answer(
-            #         f"👋 С возвращением, {user.first_name or 'репетитор'}!\n\nВыберите действие:",
-            #         reply_markup=tutor_main_menu()
-            #     )
             return
             
         # Если пользователь не зарегистрирован и нет кода — предлагаем выбрать роль
@@ -108,7 +99,7 @@ async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer() 
     
     # Сохраняем пользователя в БД
-    async for session in get_session():
+    async for session in SessionService.get_session():
         user = await UserService.create_user(
             session=session,
             telegram_id=callback.from_user.id,
@@ -117,9 +108,9 @@ async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
             role="tutor"
         )
 
-    await callback.message.edit_text(
-        "✅ Вы зарегистрированы как репетитор!\n\nВыберите действие:"
-    )
+    success_text = await MessageService.get_registration_success_message(user, "tutor")
+        
+    await callback.message.edit_text(success_text, parse_mode="Markdown")
     await callback.message.answer(
         "Меню репетитора:",
         reply_markup=tutor_main_menu()
@@ -130,7 +121,7 @@ async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь выбрал роль ученика"""
     await callback.answer()
     
-    async for session in get_session():
+    async for session in SessionService.get_session():
         user = await UserService.create_user(
             session=session,
             telegram_id=callback.from_user.id,
@@ -139,19 +130,21 @@ async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
             role="student"
         )
 
+    success_text = await MessageService.get_registration_success_message(user, "student")
+    instructions = await MessageService.get_invite_instructions()
+    
     await callback.message.edit_text(
-        "👨‍🎓 Чтобы подключиться и следить за своими занятиями\n"
-        "перейдите по пригласительной ссылке от репетитора\n\n"
+        f"{success_text}{instructions}",
+        parse_mode="Markdown"
     )
-
     await state.set_state(RegisterStates.waiting_for_invite)
 
 @common_router.message(RegisterStates.waiting_for_invite)
 async def handle_invite_input(message: types.Message, state: FSMContext):
     """Ученик вводит код приглашения"""
     invite_code = message.text.strip()
-    
-    async for session in get_session():
+    # TODO
+    async for session in SessionService.get_session():
         try:
             # Регистрируем ученика через сервис
             student, relationship, tutor = await StudentService.register_by_invite(
@@ -162,10 +155,10 @@ async def handle_invite_input(message: types.Message, state: FSMContext):
                 invite_code=invite_code
             )
         
+            success_text = await MessageService.get_connect_success_message(tutor)
+        
             await message.answer(
-                f"✅ Вы успешно подключились к репетитору!\n"
-                f"👤 {tutor.first_name or 'Репетитор'}"
-                "Теперь вы можете просматривать свои занятия и баланс.",
+                success_text,
                 parse_mode="Markdown"
             )
 

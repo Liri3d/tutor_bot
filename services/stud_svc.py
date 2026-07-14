@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.crud import *
 from db.models import User, Relationship, Invite
-from .user_service import UserService
+from .user_svc import UserService
 
 
 class StudentService:
