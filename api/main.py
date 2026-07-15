@@ -1,6 +1,6 @@
 # api/main.py
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -208,3 +208,9 @@ async def check_tutor_exists(
         "name": tutor.first_name or "Репетитор",
         "students_count": len(await RelationshipService.get_tutor_students(session, tutor.id))
     }
+
+
+@app.get("/auth")
+async def auth_callback(request: Request):
+    # Здесь можно обработать авторизацию
+    return FileResponse(os.path.join(static_dir, "index.html"))

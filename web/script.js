@@ -176,6 +176,102 @@ async function loadInvites(tutorId) {
     }
 }
 
+
+
+function handleTelegramAuth() {
+    // Проверяем, есть ли параметр tgAuthResult в URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const authResult = urlParams.get('tgAuthResult');
+    
+    if (authResult) {
+        try {
+            // Декодируем данные
+            const userData = JSON.parse(atob(authResult));
+            console.log('Telegram Auth Success:', userData);
+            
+            // Сохраняем пользователя
+            const user = {
+                telegram_id: userData.id,
+                first_name: userData.first_name,
+                username: userData.username,
+                auth_date: userData.auth_date
+            };
+            
+            // Проверяем, есть ли пользователь в БД
+            checkAndLoginUser(user);
+            
+        } catch (e) {
+            console.error('Ошибка обработки OAuth:', e);
+            alert('Ошибка авторизации через Telegram');
+        }
+    }
+}
+
+async function checkAndLoginUser(user) {
+    try {
+        // Проверяем, существует ли пользователь
+        const response = await fetch(`${API_BASE}/tutors/${user.telegram_id}/check`);
+        const data = await response.json();
+        
+        if (!data.exists) {
+            alert('Пользователь не найден. Сначала зарегистрируйтесь в боте.');
+            return;
+        }
+        
+        // Сохраняем сессию
+        localStorage.setItem('tutor_user', JSON.stringify({
+            telegram_id: user.telegram_id,
+            name: user.first_name,
+            students_count: data.students_count
+        }));
+        
+        currentTutorId = user.telegram_id;
+        
+        // Показываем дашборд
+        document.getElementById('auth-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'block';
+        
+        await loadDashboard(user.telegram_id);
+        
+        // Очищаем URL от параметров
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+    } catch (error) {
+        console.error('Ошибка проверки пользователя:', error);
+        alert('Ошибка подключения к серверу');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Проверяем OAuth-ответ
+    handleTelegramAuth();
+    
+    // Восстанавливаем сессию из localStorage
+    const savedUser = localStorage.getItem('tutor_user');
+    if (savedUser) {
+        try {
+            const user = JSON.parse(savedUser);
+            currentTutorId = user.telegram_id;
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'block';
+            loadDashboard(user.telegram_id);
+            return;
+        } catch (e) {
+            localStorage.removeItem('tutor_user');
+        }
+    }
+    
+    // Если нет сессии — показываем вход
+    document.getElementById('auth-section').style.display = 'block';
+    document.getElementById('dashboard-section').style.display = 'none';
+    
+    // Обработчики
+    document.getElementById('login-btn').addEventListener('click', handleLogin);
+    document.getElementById('telegram-id').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+});
+
 // // ========== СОЗДАНИЕ ПРИГЛАШЕНИЯ ==========
 
 // async function handleCreateInvite() {

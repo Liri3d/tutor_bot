@@ -228,3 +228,99 @@ footer {
         grid-template-columns: 1fr 1fr;
     }
 }
+
+
+
+
+
+
+
+.telegram-login-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 28px;
+    background: #2AABEE;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.telegram-login-btn:hover {
+    background: #1B8ED1;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(42, 171, 238, 0.3);
+}
+
+.telegram-login-btn:active {
+    transform: translateY(0);
+}
+
+.telegram-login-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+/* Авторизация */
+.auth-method {
+    margin: 16px 0;
+}
+
+.auth-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748B;
+    margin-bottom: 8px;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 24px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.auth-divider span {
+    padding: 0 16px;
+    color: #94A3B8;
+    font-size: 14px;
+}
+
+.btn-secondary {
+    padding: 12px 24px;
+    background: #E2E8F0;
+    color: #1E293B;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+}
+
+.btn-secondary:hover {
+    background: #CBD5E1;
+}
+
+/* Адаптив для кнопки */
+@media (max-width: 480px) {
+    .telegram-login-btn {
+        font-size: 16px;
+        padding: 12px 20px;
+    }
+}

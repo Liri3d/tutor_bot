@@ -15,7 +15,7 @@
 
         <main>
             <!-- Форма ввода Telegram ID -->
-            <section id="auth-section">
+            <!-- <section id="auth-section">
                 <h2>Вход</h2>
                 <div class="form-group">
                     <label for="telegram-id">Ваш Telegram ID:</label>
@@ -23,6 +23,35 @@
                     <button id="login-btn">Войти</button>
                 </div>
                 <p class="hint">Получите свой Telegram ID через @userinfobot</p>
+            </section> -->
+
+            <section id="auth-section">
+                <h2>🔐 Вход в систему</h2>
+                
+                <!-- Telegram Login (основной способ) -->
+                <div class="auth-method">
+                    <p class="auth-label">Войдите через Telegram:</p>
+                    <a href="https://oauth.telegram.org/auth?bot_id=8323568074&origin=https://tutorbot-liried.amvera.io&return_to=https://tutorbot-liried.amvera.io/auth" 
+                    target="_blank" 
+                    class="telegram-login-btn">
+                        <img src="https://telegram.org/img/telegram.svg" alt="Telegram" width="24" height="24">
+                        Войти через Telegram
+                    </a>
+                    <p class="hint">Нажмите на кнопку, чтобы авторизоваться через Telegram</p>
+                </div>
+
+                <div class="auth-divider"><span>или</span></div>
+
+                <!-- Запасной способ: по ID -->
+                <div class="auth-method">
+                    <p class="auth-label">Войти по Telegram ID (запасной способ):</p>
+                    <div class="form-group">
+                        <label for="telegram-id">Ваш Telegram ID:</label>
+                        <input type="number" id="telegram-id" placeholder="123456789">
+                        <button id="login-btn" class="btn-secondary">Войти по ID</button>
+                    </div>
+                    <p class="hint">Получите ID через @userinfobot</p>
+                </div>
             </section>
 
             <!-- Основной контент -->
