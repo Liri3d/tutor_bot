@@ -239,7 +239,7 @@ async def handle_change_role_no(callback: types.CallbackQuery, state: FSMContext
             user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
             
             if user:
-                await handle_back_to_main(callback, state)
+                await handle_settings_menu(callback, state)
 
                 # # Возвращаемся в меню настроек
                 # await callback.message.edit_text(
@@ -247,7 +247,7 @@ async def handle_change_role_no(callback: types.CallbackQuery, state: FSMContext
                 #     reply_markup=settings_menu(user.role),
                 #     parse_mode="Markdown"
                 # )
-                
+
         except Exception as e:
             logging.error(f"Ошибка при отмене смены роли: {e}")
             await callback.message.edit_text(
