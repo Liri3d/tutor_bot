@@ -34,21 +34,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    const loginBtn = document.getElementById('login-btn');
-    const createInviteBtn = document.getElementById('create-invite-btn');
+    // Если нет сохранённой сессии — показываем вход
+    document.getElementById('auth-section').style.display = 'block';
+    document.getElementById('dashboard-section').style.display = 'none';
 
-    loginBtn.addEventListener('click', handleLogin);
-    createInviteBtn.addEventListener('click', handleCreateInvite);
+    // const loginBtn = document.getElementById('login-btn');
+    // const createInviteBtn = document.getElementById('create-invite-btn');
 
-    // Enter для входа
-    document.getElementById('telegram-id').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
+    // loginBtn.addEventListener('click', handleLogin);
+    // createInviteBtn.addEventListener('click', handleCreateInvite);
 
-    // Enter для создания приглашения
-    document.getElementById('student-name').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') handleCreateInvite();
-    });
+    // // Enter для входа
+    // document.getElementById('telegram-id').addEventListener('keydown', (e) => {
+    //     if (e.key === 'Enter') handleLogin();
+    // });
+
+    // // Enter для создания приглашения
+    // document.getElementById('student-name').addEventListener('keydown', (e) => {
+    //     if (e.key === 'Enter') handleCreateInvite();
+    // });
 });
 
 // ========== АУТЕНТИФИКАЦИЯ ==========
@@ -78,8 +82,8 @@ async function handleLogin() {
             students_count: data.students_count
         };
         localStorage.setItem('tutor_user', JSON.stringify(userData));
-
         currentTutorId = telegramId;
+
         document.getElementById('auth-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'block';
 
