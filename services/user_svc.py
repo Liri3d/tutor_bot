@@ -66,27 +66,6 @@ class UserService:
         """Получить пользователя по Telegram ID"""
         return await db_get_user_by_telegram_id(session, telegram_id)
 
-    # @staticmethod
-    # async def change_role(
-    #     session: AsyncSession,
-    #     telegram_id: int,
-    #     new_role: str
-    # ) -> User:
-    #     """Сменить роль пользователя"""
-    #     user = await get_user_by_telegram_id(session, telegram_id)
-    #     if not user:
-    #         raise ValueError("Пользователь не найден")
-        
-    #     if user.role == new_role:
-    #         raise ValueError(f"Вы уже являетесь {new_role}")
-        
-    #     user.role = new_role
-    #     await session.commit()
-    #     await session.refresh(user)
-    #     return user
-
-    # services/user_service.py
-
     @staticmethod
     async def is_tutor(
         session: AsyncSession,
@@ -122,3 +101,40 @@ class UserService:
         """
         user = await db_get_user_by_telegram_id(session, telegram_id)
         return user is not None and user.role == "student"
+    
+    @staticmethod
+    async def change_role(
+        session: AsyncSession,
+        user: User
+    ) -> User:
+        """
+        Сменить роль пользователя на противоположную.
+        
+        Args:
+            session: Сессия БД
+            user: Объект пользователя (должен быть получен из этой же сессии)
+        
+        Returns:
+            User: Обновлённый пользователь
+        
+        Raises:
+            ValueError: Если пользователь не найден или роль некорректна
+        """
+        # Проверяем, что пользователь существует
+        if not user:
+            raise ValueError("USER_NOT_FOUND")
+        
+        # Проверяем, что роль корректна
+        if user.role not in ["tutor", "student"]:
+            raise ValueError("INVALID_ROLE")
+        
+        # Меняем роль на противоположную
+        new_role = "tutor" if user.role == "student" else "student"
+        
+        user.role = new_role
+        
+        # Сохраняем изменения
+        await session.commit()
+        await session.refresh(user)
+        
+        return user

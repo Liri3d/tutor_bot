@@ -55,6 +55,42 @@ class MessageService:
             )
         
     @staticmethod
+    async def get_change_role_success_message(
+        user: User
+    ) -> Tuple[str, Optional[InlineKeyboardMarkup], Optional[str]]:
+        """
+        Получить сообщение об успешной смене роли.
+        
+        Args:
+            user: Объект пользователя
+            next_state: Следующее состояние (если нужно)
+        
+        Returns:
+            tuple: (текст сообщения, клавиатура, следующее состояние)
+        """
+        if user.role == "tutor":
+            text = f"✅ Вы сменили роль на репетитора!\n\nВыберите действие:"
+            keyboard = tutor_main_menu()
+            next_state = "waiting_for_invite"
+        else:
+            text = f"✅ Вы сменили роль на ученика!\n\nТеперь перейдите по инвайт-ссылке от вашего репетитора:"
+            keyboard = None
+            next_state = "waiting_for_invite"
+        
+        return text, keyboard, next_state
+        
+    @staticmethod
+    async def get_change_role_confirm_message(
+        user: User       
+    ) -> str:
+        new_role = "ученика" if user.role == "tutor" else "репетитора"
+
+        return (
+            f"⚠️ Вы уверены, что хотите сменить роль на {new_role}?\n\n"
+            f"При смене роли вы потеряете доступ к данным, связанным со старой ролью."
+        )  
+
+    @staticmethod
     async def get_connect_success_message(
         tutor: User,
     ) -> str:
@@ -337,3 +373,21 @@ class MessageService:
         text += "\n📌 Здесь будут занятия и управление учеником."
         
         return text
+    
+
+
+
+
+    @staticmethod
+    async def get_main_mune_message(
+        user: User,
+    ) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
+       
+        if user.role == "tutor":
+            text = "👋 Главное меню репетитора:"
+            keyboard = tutor_main_menu()
+        else:
+            text = "👋 Главное меню ученика:"
+            keyboard = student_main_menu()
+
+        return text, keyboard

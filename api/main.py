@@ -10,6 +10,8 @@ from typing import List
 import os
 from datetime import datetime
 
+from config import BOT_USERNAME
+
 from services import *
 from api.schemas import (
     UserResponse,
@@ -40,7 +42,6 @@ app.add_middleware(
 # Для простоты используем HTML, CSS, JS в папке web/
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
 
 @app.get("/")
 async def serve_index():
@@ -129,7 +130,6 @@ async def get_tutor_lessons(
     # TODO: реализовать получение занятий
     return []
 
-
 @app.get("/api/tutors/{telegram_id}/invites", response_model=List[InviteResponse])
 async def get_tutor_invites(
     telegram_id: int,
@@ -153,43 +153,43 @@ async def get_tutor_invites(
             code=invite.code,
             student_name=invite.student_name,
             expires_at=invite.expires_at,
-            is_used=invite.is_used
+            is_used=invite.is_used,
+            link=f"https://t.me/{BOT_USERNAME}?start=invite_{invite.code}"
         )
         for invite in invites
     ]
 
 
-# @app.post("/api/tutors/{telegram_id}/invites")
-# async def create_invite(
-#     telegram_id: int,
-#     student_name: str,
-#     session: AsyncSession = Depends(SessionService.get_session)
-# ):
-#     """
-#     Создать приглашение для ученика.
-#     """
-#     tutor = await UserService.get_user_by_telegram_id(session, telegram_id)
-#     if not tutor or tutor.role != "tutor":
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="Репетитор не найден"
-#         )
+@app.post("/api/tutors/{telegram_id}/invites")
+async def create_invite(
+    telegram_id: int,
+    student_name: str,
+    session: AsyncSession = Depends(SessionService.get_session)
+):
+    """
+    Создать приглашение для ученика.
+    """
+    tutor = await UserService.get_user_by_telegram_id(session, telegram_id)
+    if not tutor or tutor.role != "tutor":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Репетитор не найден"
+        )
     
-#     from services import InviteService
-#     invite = await InviteService.create_invite(
-#         session=session,
-#         tutor_id=tutor.id,
-#         student_name=student_name,
-#         expires_in_days=1
-#     )
+    from services import InviteService
+    invite = await InviteService.create_invite(
+        session=session,
+        tutor_id=tutor.id,
+        student_name=student_name,
+        expires_in_days=1
+    )
     
-#     return {
-#         "code": invite.code,
-#         "student_name": invite.student_name,
-#         "expires_at": invite.expires_at,
-#         "link": f"https://t.me/tutortesting_bot?start=invite_{invite.code}"
-#     }
-
+    return {
+        "code": invite.code,
+        "student_name": invite.student_name,
+        "expires_at": invite.expires_at,
+        "link": f"https://t.me/{BOT_USERNAME}?start=invite_{invite.code}"
+    }
 
 @app.get("/api/tutors/{telegram_id}/check")
 async def check_tutor_exists(

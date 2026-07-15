@@ -40,6 +40,7 @@ class InviteResponse(BaseModel):
     student_name: str
     expires_at: datetime
     is_used: bool
+    link: Optional[str] = None
 
 
 class TutorStatsResponse(BaseModel):

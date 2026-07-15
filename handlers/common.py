@@ -7,10 +7,7 @@ import logging
 from states import RegisterStates
 from keyboards import role_keyboard
 
-from keyboards import (
-    tutor_main_menu,
-    student_main_menu
-)
+from keyboards import *
 
 from services import *
 
@@ -185,90 +182,116 @@ async def handle_change_role_confirm(callback: types.CallbackQuery, state: FSMCo
     """Запрос подтверждения смены роли"""
     await callback.answer()
     
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, callback.from_user.id)
+    async for session in SessionService.get_session():
+        user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
         
-#         if not user:
-#             await callback.message.edit_text("❌ Пользователь не найден.")
-#             return
+        if not user:
+            await callback.message.edit_text(MessageService.get_error_message("user_not_found"))
+            return
         
-#         new_role = "ученика" if user.role == "tutor" else "репетитора"
-        
-#         await callback.message.edit_text(
-#             text=f"⚠️ Вы уверены, что хотите сменить роль на {new_role}?\n\n"
-#                  f"При смене роли вы потеряете доступ к данным, связанным со старой ролью.",
-#             reply_markup=confirm_change_role_menu()
-#         )
+        await callback.message.edit_text(
+            text= await MessageService.get_change_role_confirm_message(user),
+            reply_markup=confirm_change_role_menu()
+        )
 
-# @common_router.callback_query(lambda c: c.data == "change_role_yes")
-# async def handle_change_role_yes(callback: types.CallbackQuery, state: FSMContext):
-#     """Подтверждение смены роли"""
-#     await callback.answer()
+@common_router.callback_query(lambda c: c.data == "change_role_yes")
+async def handle_change_role_yes(callback: types.CallbackQuery, state: FSMContext):
+    """Подтверждение смены роли"""
+    await callback.answer()
     
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, callback.from_user.id)
-        
-#         if not user:
-#             await callback.message.edit_text("❌ Пользователь не найден.")
-#             return
-        
-#         # Меняем роль
-#         new_role = "tutor" if user.role == "student" else "student"
-#         old_role = user.role
-#         user.role = new_role
-#         await session.commit()
-        
-#         user = await get_user_by_telegram_id(session, callback.from_user.id)
-
-#         # Показываем новое меню
-#         if user.role == "tutor":
-#             await callback.message.edit_text(
-#                 text=f"✅ Вы сменили роль с {old_role} на {new_role}!\n\nВыберите действие:",
-#                 reply_markup=tutor_main_menu()
-#             )
-#         else:
-#             await callback.message.edit_text(
-#                 text=f"✅ Вы сменили роль с {old_role} на {new_role}!\n\nТеперь перейдите по инвайт-ссылке от вашего репетитора:"
-#             )
-#             await state.set_state(RegisterStates.waiting_for_invite)
-
-# @common_router.callback_query(lambda c: c.data == "change_role_no")
-# async def handle_change_role_no(callback: types.CallbackQuery, state: FSMContext):
-#     """Отмена смены роли"""
-#     await callback.answer()
     
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, callback.from_user.id)
+    async for session in SessionService.get_session():
+        try:
+            user = await UserService.get_user_by_telegram_id(
+                session=session,
+                telegram_id=callback.from_user.id
+            )
+
+            user = await UserService.change_role(
+                session=session,
+                user=user
+            )
+            
+            # Получаем сообщение после смены роли
+            text, keyboard, next_state = await MessageService.get_change_role_success_message(user)
+            
+            # Отправляем сообщение
+            await callback.message.edit_text(
+                text=text,
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+            
+            # Устанавливаем следующее состояние (если нужно)
+            if next_state == "waiting_for_invite":
+                await state.set_state(RegisterStates.waiting_for_invite)
+
+        except ValueError as e:
+            await callback.message.edit_text(f"❌ {str(e)}")
         
-#         if user:
-#             # Возвращаемся в меню настроек
-#             await callback.message.edit_text(
-#                 text="⚙️ Настройки",
-#                 reply_markup=settings_menu(user.role)
-#             )
-
-
-# @common_router.callback_query(lambda c: c.data == "back_to_main")
-# async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
-#     """Вернуться в главное меню из настроек"""
-#     await callback.answer()
+@common_router.callback_query(lambda c: c.data == "change_role_no")
+async def handle_change_role_no(callback: types.CallbackQuery, state: FSMContext):
+    """Отмена смены роли"""
+    await callback.answer()
     
-#     async for session in get_session():
-#         user = await get_user_by_telegram_id(session, callback.from_user.id)
+    async for session in SessionService.get_session():
+        try: 
+            user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
+            
+            if user:
+                await handle_settings_menu(callback, state)
+
+                # # Возвращаемся в меню настроек
+                # await callback.message.edit_text(
+                #     text="⚙️ **Настройки**",
+                #     reply_markup=settings_menu(user.role),
+                #     parse_mode="Markdown"
+                # )
+
+        except Exception as e:
+            logging.error(f"Ошибка при отмене смены роли: {e}")
+            await callback.message.edit_text(
+                await MessageService.get_error_message("UNKNOWN_ERROR")
+            )
+
+@common_router.callback_query(lambda c: c.data == "back_to_main")
+async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
+    """Вернуться в главное меню из настроек"""
+    await callback.answer()
+    
+    async for session in SessionService.get_session():
+        user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
         
-#         if not user:
-#             await callback.message.edit_text("❌ Пользователь не найден.")
-#             return
+        if not user:
+            await callback.message.edit_text(await MessageService.get_error_message("user_not_found"))
+            return
         
-#         # Показываем соответствующее меню
-#         if user.role == "tutor":
-#             await callback.message.edit_text(
-#                 text="👋 Главное меню репетитора:",
-#                 reply_markup=tutor_main_menu()
-#             )
-#         else:
-#             await callback.message.edit_text(
-#                 text="👋 Главное меню ученика:",
-#                 reply_markup=student_main_menu()
-#             )
+        text, keyboard = await MessageService.get_main_mune_message(user)
+
+        # Показываем соответствующее меню
+        await callback.message.edit_text(
+            text=text,
+            reply_markup=keyboard
+        )
+
+@common_router.callback_query(lambda c: c.data == "settings_menu")
+async def handle_settings_menu(callback: types.CallbackQuery, state: FSMContext):
+    """Открыть меню настроек"""
+    print("BACK")
+    await callback.answer()
+    
+    async for session in SessionService.get_session():
+        user = await UserService.get_user_by_telegram_id(session, callback.from_user.id)
         
+        if not user:
+            await callback.message.edit_text(await MessageService.get_error_message("user_not_found"))
+            return
+        
+        settings_text = await MessageService.get_settings_message(user)
+
+        # Показываем меню настроек
+        await callback.message.edit_text(
+            text=settings_text,
+            reply_markup=settings_menu(user.role),
+            parse_mode="Markdown"
+        )
