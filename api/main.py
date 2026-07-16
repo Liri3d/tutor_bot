@@ -1,5 +1,6 @@
 # api/main.py
 
+from aiogram import Bot
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -221,14 +222,12 @@ async def auth_page():
 
 
 
-import hashlib
-import hmac
-import urllib.parse
+
 
 @app.get("/api/auth/telegram")
 async def telegram_auth_callback(
-    id: int,
-    first_name: str,
+    id: int = None,
+    first_name: str = None,
     username: str = None,
     photo_url: str = None,
     auth_date: int = None,
@@ -239,58 +238,58 @@ async def telegram_auth_callback(
     """
     from config import BOT_TOKEN
     
-    print(f"🔍 Проверка подписи для пользователя: {id}")
-    print(f"   first_name: {first_name}")
-    print(f"   username: {username}")
-    print(f"   auth_date: {auth_date}")
-    print(f"   hash: {hash}")
+    # ===== 1. Проверяем наличие параметров =====
+    missing_params = []
+    if not id: missing_params.append("id")
+    if not first_name: missing_params.append("first_name")
+    if not auth_date: missing_params.append("auth_date")
+    if not hash: missing_params.append("hash")
     
-    # ===== 1. Проверяем обязательные параметры =====
-    if not all([id, first_name, auth_date, hash]):
-        print("❌ Отсутствуют обязательные параметры")
-        raise HTTPException(status_code=400, detail="Missing required parameters")
+    if missing_params:
+        print(f"❌ Отсутствуют параметры: {missing_params}")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Missing required parameters: {', '.join(missing_params)}"
+        )
     
-    # ===== 2. Собираем все параметры (кроме hash) =====
-    data = {
-        "auth_date": str(auth_date),
-        "first_name": first_name,
-        "id": str(id),
-    }
+    print(f"🔍 Проверка авторизации для: @{username or first_name} (id={id})")
     
-    if username:
-        data["username"] = username
-    if photo_url:
-        data["photo_url"] = photo_url
+    # ===== 2. Проверяем подпись =====
+    try:
+        data = {
+            "id": id,
+            "first_name": first_name,
+            "auth_date": auth_date,
+            "hash": hash,
+        }
+        if username:
+            data["username"] = username
+        if photo_url:
+            data["photo_url"] = photo_url
+        
+        bot = Bot(token=BOT_TOKEN)
+        
+        if not bot.check_authorization(data):
+            print("❌ Недействительная подпись!")
+            raise HTTPException(status_code=401, detail="Invalid authentication")
+            
+        print("✅ Подпись подтверждена!")
+        
+    except InvalidToken:
+        print("❌ Недействительный токен бота!")
+        raise HTTPException(status_code=500, detail="Invalid bot token")
+    except Exception as e:
+        print(f"❌ Ошибка проверки: {e}")
+        raise HTTPException(status_code=401, detail=f"Authentication error: {str(e)}")
     
-    # ===== 3. Сортируем по ключу и собираем строку =====
-    # Важно: порядок должен быть строгим!
-    sorted_data = sorted(data.items())
-    data_string = "\n".join([f"{k}={v}" for k, v in sorted_data])
-    
-    print(f"📝 Строка для проверки: {data_string}")
-    
-    # ===== 4. Проверяем подпись =====
-    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
-    hmac_hash = hmac.new(secret_key, data_string.encode(), hashlib.sha256)
-    calculated_hash = hmac_hash.hexdigest()
-    
-    print(f"🔐 Вычисленный hash: {calculated_hash}")
-    print(f"📨 Полученный hash:  {hash}")
-    
-    if calculated_hash != hash:
-        print("❌ Подписи не совпадают!")
-        raise HTTPException(status_code=401, detail="Invalid authentication")
-    
-    print("✅ Подпись верна!")
-    
-    # ===== 5. Проверяем, не истекла ли авторизация =====
+    # ===== 3. Проверяем срок действия =====
     from datetime import datetime, timedelta
     auth_time = datetime.fromtimestamp(auth_date)
     if datetime.now() - auth_time > timedelta(hours=24):
         print("❌ Авторизация истекла")
         raise HTTPException(status_code=401, detail="Authorization expired")
     
-    # ===== 6. Ищем или создаём пользователя =====
+    # ===== 4. Ищем или создаём пользователя =====
     async for session in SessionService.get_session():
         user = await UserService.get_user_by_telegram_id(session, id)
         
@@ -302,7 +301,7 @@ async def telegram_auth_callback(
                 first_name=first_name,
                 role="student"
             )
-            print(f"✅ Создан новый пользователь: {user.id}")
+            print(f"✅ Создан новый пользователь: @{user.username or user.first_name}")
             return {
                 "status": "registered",
                 "telegram_id": user.telegram_id,
@@ -312,7 +311,7 @@ async def telegram_auth_callback(
                 "message": "✅ Аккаунт создан!"
             }
         
-        print(f"✅ Найден пользователь: {user.id}")
+        print(f"✅ Найден пользователь: @{user.username or user.first_name}")
         return {
             "status": "authenticated",
             "telegram_id": user.telegram_id,
