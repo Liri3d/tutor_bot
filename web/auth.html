@@ -19,20 +19,45 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Получаем параметры из URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
-            const firstName = urlParams.get('first_name');
-            const username = urlParams.get('username');
-            const authDate = urlParams.get('auth_date');
-            const hash = urlParams.get('hash');
-            
             const statusEl = document.getElementById('auth-status');
             const resultEl = document.getElementById('auth-result');
 
-            // Если есть параметры — отправляем на бекенд
-            if (id && hash) {
-                fetch(`/api/auth/telegram?id=${id}&first_name=${encodeURIComponent(firstName)}&username=${encodeURIComponent(username || '')}&auth_date=${authDate}&hash=${hash}`)
+            // ===== 1. ПРОВЕРЯЕМ ПАРАМЕТРЫ В URL =====
+            const urlParams = new URLSearchParams(window.location.search);
+            const hash = window.location.hash;
+
+            // ===== 2. ПЫТАЕМСЯ ИЗВЛЕЧЬ ДАННЫЕ =====
+            let id = urlParams.get('id');
+            let firstName = urlParams.get('first_name');
+            let username = urlParams.get('username');
+            let authDate = urlParams.get('auth_date');
+            let hashParam = urlParams.get('hash');
+
+            // Если параметров нет в query, пробуем из фрагмента (#)
+            if (!id && hash.startsWith('#tgAuthResult=')) {
+                try {
+                    const encoded = hash.substring('#tgAuthResult='.length);
+                    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonString = atob(base64);
+                    const data = JSON.parse(jsonString);
+                    
+                    id = data.id;
+                    firstName = data.first_name;
+                    username = data.username;
+                    authDate = data.auth_date;
+                    hashParam = data.hash;
+                } catch (e) {
+                    console.error('Ошибка парсинга hash:', e);
+                }
+            }
+
+            // ===== 3. ЕСЛИ ЕСТЬ ДАННЫЕ — ОТПРАВЛЯЕМ НА БЕКЕНД =====
+            if (id && hashParam) {
+                statusEl.textContent = '⏳ Проверка данных...';
+                
+                const url = `/api/auth/telegram?id=${id}&first_name=${encodeURIComponent(firstName)}&username=${encodeURIComponent(username || '')}&auth_date=${authDate}&hash=${hashParam}`;
+                
+                fetch(url)
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'authenticated' || data.status === 'registered') {
@@ -47,6 +72,7 @@
                             resultEl.innerHTML = `
                                 <p style="color: #38a169; font-size: 18px;">✅ Авторизация успешна!</p>
                                 <p>👤 ${data.first_name}</p>
+                                <p>📌 Роль: ${data.role}</p>
                                 <button onclick="window.location.href='/'" class="btn-primary">Перейти в дашборд</button>
                             `;
                             
@@ -60,14 +86,19 @@
                         }
                     })
                     .catch(error => {
+                        console.error('Ошибка запроса:', error);
                         statusEl.textContent = '❌ Ошибка подключения';
-                        resultEl.innerHTML = `<p style="color: #e53e3e;">Ошибка: ${error.message}</p>`;
+                        resultEl.innerHTML = `
+                            <p style="color: #e53e3e;">Ошибка: ${error.message}</p>
+                            <button onclick="window.location.href='/'" class="btn-primary">Вернуться на главную</button>
+                        `;
                     });
             } else {
-                // Нет параметров — возможно, ошибка
+                // Нет данных — показываем ошибку
                 statusEl.textContent = '❌ Ошибка авторизации';
                 resultEl.innerHTML = `
                     <p style="color: #e53e3e;">Не получены данные от Telegram.</p>
+                    <p style="font-size: 14px; color: #a0aec0;">Параметры: id=${id}, hash=${hashParam}</p>
                     <button onclick="window.location.href='/'" class="btn-primary">Вернуться на главную</button>
                 `;
             }

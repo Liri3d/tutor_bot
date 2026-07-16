@@ -234,6 +234,11 @@ async def telegram_auth_callback(
     Обработка callback от Telegram OAuth.
     Проверяет подпись и возвращает данные пользователя.
     """
+    print(f"🔍 Получены параметры: id={id}, first_name={first_name}, username={username}, auth_date={auth_date}, hash={hash}")
+    
+    # console.log('🔍 Все параметры URL:', window.location.search);
+    # console.log('🔍 Фрагмент:', window.location.hash);
+
     from config import BOT_TOKEN
     
     # Проверяем обязательные параметры
