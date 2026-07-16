@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 from telegram.error import InvalidToken 
 
-from config import BOT_USERNAME
+from config import BOT_ID, BOT_USERNAME
 
 from services import *
 from api.schemas import (
@@ -321,3 +321,13 @@ async def telegram_auth_callback(
             "role": user.role,
             "message": f"👋 С возвращением, {user.first_name}!"
         }
+    
+
+@app.get("/api/bot/info")
+async def get_bot_info():
+    """Получить информацию о боте"""
+    return {
+        "id": BOT_ID,
+        "username": BOT_USERNAME,
+        "is_initialized": BOT_ID is not None
+    }

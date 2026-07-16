@@ -5,7 +5,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from config import BOT_TOKEN, ENVIRONMENT
+from config import BOT_TOKEN, ENVIRONMENT, init_bot_info
 from handlers.common import common_router
 from handlers.tutor import tutor_router
 from services import SessionService
@@ -21,6 +21,9 @@ async def run_bot():
     dp.include_router(tutor_router)
     
     await SessionService.init_db()
+
+    await init_bot_info()
+    
     print("🚀 Бот запущен!")
     await dp.start_polling(bot)
 

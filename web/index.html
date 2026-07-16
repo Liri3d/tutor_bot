@@ -27,42 +27,24 @@
 
             <section id="auth-section">
                 <h2>🔐 Вход в систему</h2>
-                
-                <!-- Telegram Login (основной способ) -->
-                <!-- <div class="auth-method">
-                    <p class="auth-label">Войдите через Telegram:</p>
-                    
-                    <a href="https://oauth.telegram.org/auth?bot_id=8812211643&origin=https://tutorbot-liried.amvera.io&return_to=https://tutorbot-liried.amvera.io/auth" 
-                    
-                    target="_blank" 
-                    class="telegram-login-btn">
-                        <img src="https://telegram.org/img/telegram.svg" alt="Telegram" width="24" height="24">
-                        Войти через Telegram
-                    </a>
-                    <p class="hint">Нажмите на кнопку, чтобы авторизоваться через Telegram</p>
-                </div> -->
 
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label>Войти через Telegram:</label>
                     <a href="https://oauth.telegram.org/auth?bot_id=8812211643&origin=https://tutorbot-liried.amvera.io&return_to=https://tutorbot-liried.amvera.io/auth" 
                     class="telegram-login-btn">
                         🔐 Войти через Telegram
                     </a>
                     <small class="hint">Нажмите для входа через Telegram</small>
+                </div> -->
+
+                <div class="form-group">
+                    <label>Войти через Telegram:</label>
+                    <a id="telegram-login-link" href="#" class="telegram-login-btn">
+                        🔐 Войти через Telegram
+                    </a>
+                    <small class="hint">Нажмите для входа через Telegram</small>
                 </div>
 
-                <!-- <div class="auth-divider"><span>или</span></div> -->
-
-                <!-- Запасной способ: по ID -->
-                <!-- <div class="auth-method">
-                    <p class="auth-label">Войти по Telegram ID (запасной способ):</p>
-                    <div class="form-group">
-                        <label for="telegram-id">Ваш Telegram ID:</label>
-                        <input type="number" id="telegram-id" placeholder="123456789">
-                        <button id="login-btn" class="btn-secondary">Войти по ID</button>
-                    </div>
-                    <p class="hint">Получите ID через @userinfobot</p>
-                </div> -->
             </section>
 
             <!-- Основной контент -->

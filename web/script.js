@@ -2,10 +2,16 @@
 
 const API_BASE = '/api';
 let currentTutorId = null;
+let BOT_ID = null;
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Загрузка страницы...');
+    
+    // Получаем информацию о боте
+    getBotInfo();
+
     // Проверяем сохраненного пользователя
     const savedUser = localStorage.getItem('tutor_user');
     
@@ -370,3 +376,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+async function getBotInfo() {
+    try {
+        const response = await fetch('/api/bot/info');
+        const data = await response.json();
+        if (data.is_initialized) {
+            BOT_ID = data.id;
+            console.log('✅ Бот найден, ID:', BOT_ID);
+            updateTelegramLoginLink();
+        } else {
+            console.warn('⚠️ Информация о боте не инициализирована');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка получения информации о боте:', error);
+    }
+}
+
+// ===== ОБНОВЛЯЕМ ССЫЛКУ ДЛЯ ВХОДА =====
+function updateTelegramLoginLink() {
+    const loginLink = document.getElementById('telegram-login-link');
+    if (loginLink && BOT_ID) {
+        const origin = window.location.origin;
+        const returnUrl = origin + '/auth';
+        loginLink.href = `https://oauth.telegram.org/auth?bot_id=${BOT_ID}&origin=${origin}&return_to=${returnUrl}`;
+        console.log('🔗 Ссылка для входа:', loginLink.href);
+    }
+}
