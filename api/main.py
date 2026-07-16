@@ -6,7 +6,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-
+import hashlib
+import hmac
 import os
 from datetime import datetime
 
@@ -211,6 +212,80 @@ async def check_tutor_exists(
 
 
 @app.get("/auth")
-async def auth_callback(request: Request):
-    # Здесь можно обработать авторизацию
-    return FileResponse(os.path.join(static_dir, "index.html"))
+async def auth_page():
+    """Страница обработки авторизации"""
+    auth_path = os.path.join(static_dir, "auth.html")
+    if os.path.exists(auth_path):
+        return FileResponse(auth_path)
+    return {"message": "Auth page not found"}
+
+
+
+@app.get("/api/auth/telegram")
+async def telegram_auth_callback(
+    id: int,
+    first_name: str,
+    username: str = None,
+    photo_url: str = None,
+    auth_date: int = None,
+    hash: str = None
+):
+    """
+    Обработка callback от Telegram OAuth.
+    Проверяет подпись и возвращает данные пользователя.
+    """
+    from config import BOT_TOKEN
+    
+    # Проверяем обязательные параметры
+    if not all([id, first_name, auth_date, hash]):
+        raise HTTPException(status_code=400, detail="Missing required parameters")
+    
+    # Проверяем подпись (security)
+    data_check_string = f"auth_date={auth_date}\nfirst_name={first_name}\nid={id}"
+    if username:
+        data_check_string += f"\nusername={username}"
+    if photo_url:
+        data_check_string += f"\nphoto_url={photo_url}"
+    
+    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
+    hmac_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256)
+    
+    if hmac_hash.hexdigest() != hash:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+    
+    # Проверяем, не истекла ли авторизация (24 часа)
+    from datetime import datetime, timedelta
+    auth_time = datetime.fromtimestamp(auth_date)
+    if datetime.now() - auth_time > timedelta(hours=24):
+        raise HTTPException(status_code=401, detail="Authorization expired")
+    
+    # Ищем или создаём пользователя
+    async for session in SessionService.get_session():
+        user = await UserService.get_user_by_telegram_id(session, id)
+        
+        if not user:
+            # Создаём нового пользователя
+            user = await UserService.create_user(
+                session=session,
+                telegram_id=id,
+                username=username,
+                first_name=first_name,
+                role="student"  # По умолчанию ученик
+            )
+            return {
+                "status": "registered",
+                "telegram_id": user.telegram_id,
+                "first_name": user.first_name,
+                "username": user.username,
+                "role": user.role,
+                "message": "✅ Аккаунт создан!"
+            }
+        
+        return {
+            "status": "authenticated",
+            "telegram_id": user.telegram_id,
+            "first_name": user.first_name,
+            "username": user.username,
+            "role": user.role,
+            "message": f"👋 С возвращением, {user.first_name}!"
+        }

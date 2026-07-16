@@ -340,10 +340,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ========== ВЫХОД ==========
 
-document.getElementById('logout-btn')?.addEventListener('click', () => {
+document.getElementById('logout-btn')?.addEventListener('click', function() {
+    // Удаляем пользователя из localStorage
     localStorage.removeItem('tutor_user');
+    localStorage.removeItem('telegram_user');
+    
+    // Очищаем текущую сессию
     currentTutorId = null;
-    document.getElementById('auth-section').style.display = 'block';
-    document.getElementById('dashboard-section').style.display = 'none';
-    document.getElementById('telegram-id').value = '';
+    
+    // Перезагружаем страницу
+    window.location.href = '/';
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем, есть ли пользователь в localStorage
+    const savedUser = localStorage.getItem('tutor_user');
+    if (savedUser) {
+        try {
+            const user = JSON.parse(savedUser);
+            currentTutorId = user.telegram_id;
+            
+            // Сразу показываем дашборд
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'block';
+            loadDashboard(currentTutorId);
+        } catch (e) {
+            console.error('Ошибка восстановления сессии:', e);
+            localStorage.removeItem('tutor_user');
+        }
+    }
 });
