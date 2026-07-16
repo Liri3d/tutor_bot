@@ -225,6 +225,25 @@ async def auth_page():
 
 
 
+
+
+
+
+def verify_telegram_auth(data: dict, bot_token: str) -> bool:
+    """Ручная проверка подписи Telegram OAuth"""
+    received_hash = data.pop('hash', None)
+    if not received_hash:
+        return False
+    
+    sorted_data = sorted(data.items())
+    data_string = "\n".join([f"{k}={v}" for k, v in sorted_data])
+    
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+    hmac_hash = hmac.new(secret_key, data_string.encode(), hashlib.sha256)
+    calculated_hash = hmac_hash.hexdigest()
+    
+    return calculated_hash == received_hash
+
 @app.get("/api/auth/telegram")
 async def telegram_auth_callback(
     id: int = None,
@@ -261,20 +280,22 @@ async def telegram_auth_callback(
             "id": id,
             "first_name": first_name,
             "auth_date": auth_date,
-            "hash": hash,
         }
         if username:
             data["username"] = username
         if photo_url:
             data["photo_url"] = photo_url
         
-        bot = Bot(token=BOT_TOKEN)
+        # bot = Bot(token=BOT_TOKEN)
         
-        if not bot.check_authorization(data):
-            print("❌ Недействительная подпись!")
-            raise HTTPException(status_code=401, detail="Invalid authentication")
+        # if not bot.check_authorization(data):
+        #     print("❌ Недействительная подпись!")
+        #     raise HTTPException(status_code=401, detail="Invalid authentication")
             
-        print("✅ Подпись подтверждена!")
+        # print("✅ Подпись подтверждена!")
+
+        if not verify_telegram_auth(data.copy(), BOT_TOKEN):
+            raise HTTPException(status_code=401, detail="Invalid authentication")
         
     except InvalidToken:
         print("❌ Недействительный токен бота!")
