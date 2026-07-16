@@ -1,6 +1,13 @@
 from .session import db_init_db, db_get_session
-from .crud import (
-    db_get_user_by_id,
-    db_get_user_by_telegram_id,
-    db_get_active_relationships_for_tutor,
-)
+from .models import Base, User, Tutor, Student, Invite, Relationship
+
+__all__ = [
+    'db_init_db',
+    'db_get_session',
+    'Base',
+    'User',
+    'Tutor',
+    'Student',
+    'Invite',
+    'Relationship',
+]

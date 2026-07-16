@@ -403,3 +403,156 @@ function updateTelegramLoginLink() {
         console.log('🔗 Ссылка для входа:', loginLink.href);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    });
+});
+
+// ===== РЕГИСТРАЦИЯ =====
+document.getElementById('register-btn').addEventListener('click', handleRegister);
+
+async function handleRegister() {
+    const login = document.getElementById('reg-login').value.trim();
+    const name = document.getElementById('reg-name').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const confirm = document.getElementById('reg-confirm').value;
+    const errorDiv = document.getElementById('register-error');
+    const successDiv = document.getElementById('register-success');
+
+    // Валидация
+    if (!login || login.length < 3) {
+        errorDiv.textContent = '❌ Логин должен быть минимум 3 символа';
+        return;
+    }
+    if (!name) {
+        errorDiv.textContent = '❌ Введите ваше имя';
+        return;
+    }
+    if (!password || password.length < 6) {
+        errorDiv.textContent = '❌ Пароль должен быть минимум 6 символов';
+        return;
+    }
+    if (password !== confirm) {
+        errorDiv.textContent = '❌ Пароли не совпадают';
+        return;
+    }
+
+    errorDiv.textContent = '⏳ Регистрация...';
+    const btn = document.getElementById('register-btn');
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                login: login,
+                password: password,
+                first_name: name,
+                role: 'tutor'
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            errorDiv.textContent = '❌ ' + (data.detail || 'Ошибка регистрации');
+            btn.disabled = false;
+            return;
+        }
+
+        successDiv.style.display = 'block';
+        successDiv.textContent = '✅ ' + data.message;
+        errorDiv.textContent = '';
+
+        // Переключаем на вкладку входа
+        setTimeout(() => {
+            document.querySelector('.tab-btn[data-tab="login"]').click();
+            document.getElementById('login-input').value = login;
+        }, 1000);
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+        errorDiv.textContent = '❌ Ошибка подключения к серверу';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// ===== ВХОД =====
+document.getElementById('login-btn').addEventListener('click', handleLogin);
+
+async function handleLogin() {
+    const login = document.getElementById('login-input').value.trim();
+    const password = document.getElementById('password-input').value;
+    const errorDiv = document.getElementById('login-error');
+
+    if (!login) {
+        errorDiv.textContent = '❌ Введите логин';
+        return;
+    }
+    if (!password) {
+        errorDiv.textContent = '❌ Введите пароль';
+        return;
+    }
+
+    errorDiv.textContent = '⏳ Вход...';
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            errorDiv.textContent = '❌ ' + (data.detail || 'Ошибка входа');
+            btn.disabled = false;
+            return;
+        }
+
+        localStorage.setItem('tutor_user', JSON.stringify(data));
+
+        errorDiv.textContent = '✅ ' + data.message;
+        
+        setTimeout(() => {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'block';
+            // Если есть telegram_id — загружаем данные, иначе показываем пустой дашборд
+            if (data.telegram_id) {
+                loadDashboard(data.telegram_id);
+            } else {
+                // Заглушка для пользователей без Telegram
+                document.getElementById('total-students').textContent = '0';
+                document.getElementById('active-students').textContent = '0';
+                document.getElementById('lessons-week').textContent = '0';
+            }
+        }, 500);
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+        errorDiv.textContent = '❌ Ошибка подключения к серверу';
+    } finally {
+        btn.disabled = false;
+    }
+}

@@ -1,38 +1,38 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import *
+from db.session import *
 from db.models import User, Relationship
 
 
 class RelationshipService:
     """Сервис для работы со связями репетитор-ученик"""
 
-    @staticmethod
-    async def get_tutor_students(
-        session: AsyncSession,
-        tutor_id: int
-    ) -> List[User]:
-        """
-        Получить всех учеников репетитора.
+#     @staticmethod
+#     async def get_tutor_students(
+#         session: AsyncSession,
+#         tutor_id: int
+#     ) -> List[User]:
+#         """
+#         Получить всех учеников репетитора.
         
-        Args:
-            session: Сессия БД
-            tutor_id: ID репетитора
+#         Args:
+#             session: Сессия БД
+#             tutor_id: ID репетитора
         
-        Returns:
-            List[User]: Список учеников
-        """
-        # Получаем все активные связи
-        relationships = await db_get_active_relationships_for_tutor(session, tutor_id)
+#         Returns:
+#             List[User]: Список учеников
+#         """
+#         # Получаем все активные связи
+#         relationships = await db_get_active_relationships_for_tutor(session, tutor_id)
         
-        students = []
-        for rel in relationships:
-            student = await db_get_user_by_id(session, rel.student_id)
-            if student:
-                students.append(student)
+#         students = []
+#         for rel in relationships:
+#             student = await db_get_user_by_id(session, rel.student_id)
+#             if student:
+#                 students.append(student)
         
-        return students
+#         return students
     
 
 

@@ -5,3 +5,4 @@ from .user_svc import UserService
 from .notice_svc import NotificationService
 from .msg_svc import MessageService
 from .session_svc import SessionService
+from .auth_svc import AuthService

@@ -4,7 +4,7 @@ from typing import Tuple, Optional, List
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import *
+# from db.crud import *
 from db.models import User, Relationship, Invite
 from .user_svc import UserService
 

@@ -16,13 +16,7 @@ from telegram.error import InvalidToken
 from config import BOT_ID, BOT_USERNAME
 
 from services import *
-from api.schemas import (
-    UserResponse,
-    StudentResponse,
-    LessonResponse,
-    InviteResponse,
-    TutorStatsResponse,
-)
+from api.schemas import *
 
 app = FastAPI(
     title="Tutor Bot API",
@@ -46,6 +40,18 @@ app.add_middleware(
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Проверяет пароль"""
+    try:
+        salt, stored_hash = password_hash.split(':')
+        calculated_hash = hashlib.sha256((salt + password).encode()).hexdigest()
+        return calculated_hash == stored_hash
+    except:
+        return False
+    
+    
 @app.get("/")
 async def serve_index():
     """Главная страница"""
@@ -343,7 +349,6 @@ async def telegram_auth_callback(
             "message": f"👋 С возвращением, {user.first_name}!"
         }
     
-
 @app.get("/api/bot/info")
 async def get_bot_info():
     """Получить информацию о боте"""
@@ -352,3 +357,56 @@ async def get_bot_info():
         "username": BOT_USERNAME,
         "is_initialized": BOT_ID is not None
     }
+
+
+
+
+
+@app.post("/api/auth/register")
+async def register(
+    request: RegisterRequest,
+    session: AsyncSession = Depends(SessionService.get_session)
+):
+    """
+    Регистрация репетитора.
+    """
+    try:
+        tutor = await AuthService.register_tutor(
+            session=session,
+            login=request.login,
+            password=request.password,
+            first_name=request.first_name
+        )
+        return {
+            "status": "registered",
+            "id": tutor.id,
+            "login": tutor.login,
+            "first_name": tutor.first_name,
+            "role": "tutor",
+            "message": "✅ Регистрация успешна!"
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/auth/login")
+async def login(
+    request: LoginRequest,
+    session: AsyncSession = Depends(SessionService.get_session)
+):
+    """Вход репетитора"""
+    try:
+        tutor = await AuthService.login_tutor(
+            session=session,
+            login=request.login,
+            password=request.password
+        )
+        return {
+            "status": "authenticated",
+            "id": tutor.id,
+            "login": tutor.login,
+            "first_name": tutor.first_name,
+            "role": "tutor",
+            "message": f"👋 Добро пожаловать, {tutor.first_name}!"
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))

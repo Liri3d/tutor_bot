@@ -30,19 +30,56 @@
 
                 <!-- <div class="form-group">
                     <label>Войти через Telegram:</label>
-                    <a href="https://oauth.telegram.org/auth?bot_id=8812211643&origin=https://tutorbot-liried.amvera.io&return_to=https://tutorbot-liried.amvera.io/auth" 
-                    class="telegram-login-btn">
+                    <a id="telegram-login-link" href="#" class="telegram-login-btn">
                         🔐 Войти через Telegram
                     </a>
                     <small class="hint">Нажмите для входа через Telegram</small>
                 </div> -->
 
-                <div class="form-group">
-                    <label>Войти через Telegram:</label>
-                    <a id="telegram-login-link" href="#" class="telegram-login-btn">
-                        🔐 Войти через Telegram
-                    </a>
-                    <small class="hint">Нажмите для входа через Telegram</small>
+                <div class="auth-body">
+                    <!-- ===== ВКЛАДКИ ===== -->
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="login">Вход</button>
+                        <button class="tab-btn" data-tab="register">Регистрация</button>
+                    </div>
+
+                    <!-- ===== ВХОД ===== -->
+                    <div id="tab-login" class="tab-content active">
+                        <div class="form-group">
+                            <label for="login-input">Логин</label>
+                            <input type="text" id="login-input" placeholder="Введите логин">
+                        </div>
+                        <div class="form-group">
+                            <label for="password-input">Пароль</label>
+                            <input type="password" id="password-input" placeholder="Введите пароль">
+                        </div>
+                        <button id="login-btn" class="btn-primary">🔐 Войти</button>
+                        <div id="login-error" class="error-message"></div>
+                    </div>
+
+                    <!-- ===== РЕГИСТРАЦИЯ ===== -->
+                    <div id="tab-register" class="tab-content">
+                        <div class="form-group">
+                            <label for="reg-login">Логин</label>
+                            <input type="text" id="reg-login" placeholder="Придумайте логин">
+                            <small class="hint">Только латиница и цифры</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-name">Ваше имя</label>
+                            <input type="text" id="reg-name" placeholder="Как к вам обращаться">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Пароль</label>
+                            <input type="password" id="reg-password" placeholder="Минимум 6 символов">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-confirm">Подтвердите пароль</label>
+                            <input type="password" id="reg-confirm" placeholder="Повторите пароль">
+                        </div>
+                        <button id="register-btn" class="btn-primary">✅ Зарегистрироваться</button>
+                        <div id="register-error" class="error-message"></div>
+                        <div id="register-success" class="success-message" style="display:none;"></div>
+                    </div>
                 </div>
 
             </section>

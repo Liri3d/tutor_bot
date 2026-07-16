@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Optional
 from sqlalchemy import BigInteger, String, DateTime, CheckConstraint, Boolean, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -11,9 +12,16 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
-    username: Mapped[str] = mapped_column(String(255), nullable=True)
-    first_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    
+    # login: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    # password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    # Это поле теперь опциональное
+    # telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger, unique=True, nullable=True)
+    
+    first_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    
     role: Mapped[str] = mapped_column(
         String(20),
         CheckConstraint("role IN ('tutor', 'student')"),
@@ -35,9 +43,45 @@ class User(Base):
         back_populates="student"
     )
 
+    __mapper_args__ = {
+        "polymorphic_identity": "user",
+        "polymorphic_on": "role",
+    }
+
     def __repr__(self):
         return f"<User(telegram_id={self.telegram_id}, role={self.role})>"
 
+class Tutor(User):
+    """Репетитор — регистрация через логин/пароль"""
+    __tablename__ = "tutors"
+
+    id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    login: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    # Дополнительные поля репетитора
+    work_start: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)  # "09:00"
+    work_end: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)    # "18:00"
+    working_days: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # "1,2,3,4,5"
+
+    __mapper_args__ = {
+        "polymorphic_identity": "tutor",
+    }
+
+class Student(User):
+    """Ученик — регистрация через Telegram"""
+    __tablename__ = "students"
+
+    id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    
+    # Дополнительные поля ученика
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    parent_contact: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    __mapper_args__ = {
+        "polymorphic_identity": "student",
+    }
 
 class Invite(Base):
     """Модель приглашения"""

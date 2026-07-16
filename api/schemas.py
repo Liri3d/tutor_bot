@@ -49,3 +49,13 @@ class TutorStatsResponse(BaseModel):
     active_students: int
     lessons_this_week: int
     lessons_this_month: int
+
+class RegisterRequest(BaseModel):
+    login: str  
+    password: str
+    first_name: str
+    role: str = "tutor" 
+
+class LoginRequest(BaseModel):
+    login: str
+    password: str

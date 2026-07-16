@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import *
+# from db.crud import *
 from db.models import Invite
 
 
