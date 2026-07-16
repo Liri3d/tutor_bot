@@ -221,6 +221,10 @@ async def auth_page():
 
 
 
+import hashlib
+import hmac
+import urllib.parse
+
 @app.get("/api/auth/telegram")
 async def telegram_auth_callback(
     id: int,
@@ -232,51 +236,73 @@ async def telegram_auth_callback(
 ):
     """
     Обработка callback от Telegram OAuth.
-    Проверяет подпись и возвращает данные пользователя.
     """
-    print(f"🔍 Получены параметры: id={id}, first_name={first_name}, username={username}, auth_date={auth_date}, hash={hash}")
-    
-    # console.log('🔍 Все параметры URL:', window.location.search);
-    # console.log('🔍 Фрагмент:', window.location.hash);
-
     from config import BOT_TOKEN
     
-    # Проверяем обязательные параметры
+    print(f"🔍 Проверка подписи для пользователя: {id}")
+    print(f"   first_name: {first_name}")
+    print(f"   username: {username}")
+    print(f"   auth_date: {auth_date}")
+    print(f"   hash: {hash}")
+    
+    # ===== 1. Проверяем обязательные параметры =====
     if not all([id, first_name, auth_date, hash]):
+        print("❌ Отсутствуют обязательные параметры")
         raise HTTPException(status_code=400, detail="Missing required parameters")
     
-    # Проверяем подпись (security)
-    data_check_string = f"auth_date={auth_date}\nfirst_name={first_name}\nid={id}"
+    # ===== 2. Собираем все параметры (кроме hash) =====
+    data = {
+        "auth_date": str(auth_date),
+        "first_name": first_name,
+        "id": str(id),
+    }
+    
     if username:
-        data_check_string += f"\nusername={username}"
+        data["username"] = username
     if photo_url:
-        data_check_string += f"\nphoto_url={photo_url}"
+        data["photo_url"] = photo_url
     
+    # ===== 3. Сортируем по ключу и собираем строку =====
+    # Важно: порядок должен быть строгим!
+    sorted_data = sorted(data.items())
+    data_string = "\n".join([f"{k}={v}" for k, v in sorted_data])
+    
+    print(f"📝 Строка для проверки: {data_string}")
+    
+    # ===== 4. Проверяем подпись =====
     secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
-    hmac_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256)
+    hmac_hash = hmac.new(secret_key, data_string.encode(), hashlib.sha256)
+    calculated_hash = hmac_hash.hexdigest()
     
-    if hmac_hash.hexdigest() != hash:
+    print(f"🔐 Вычисленный hash: {calculated_hash}")
+    print(f"📨 Полученный hash:  {hash}")
+    
+    if calculated_hash != hash:
+        print("❌ Подписи не совпадают!")
         raise HTTPException(status_code=401, detail="Invalid authentication")
     
-    # Проверяем, не истекла ли авторизация (24 часа)
+    print("✅ Подпись верна!")
+    
+    # ===== 5. Проверяем, не истекла ли авторизация =====
     from datetime import datetime, timedelta
     auth_time = datetime.fromtimestamp(auth_date)
     if datetime.now() - auth_time > timedelta(hours=24):
+        print("❌ Авторизация истекла")
         raise HTTPException(status_code=401, detail="Authorization expired")
     
-    # Ищем или создаём пользователя
+    # ===== 6. Ищем или создаём пользователя =====
     async for session in SessionService.get_session():
         user = await UserService.get_user_by_telegram_id(session, id)
         
         if not user:
-            # Создаём нового пользователя
             user = await UserService.create_user(
                 session=session,
                 telegram_id=id,
                 username=username,
                 first_name=first_name,
-                role="student"  # По умолчанию ученик
+                role="student"
             )
+            print(f"✅ Создан новый пользователь: {user.id}")
             return {
                 "status": "registered",
                 "telegram_id": user.telegram_id,
@@ -286,6 +312,7 @@ async def telegram_auth_callback(
                 "message": "✅ Аккаунт создан!"
             }
         
+        print(f"✅ Найден пользователь: {user.id}")
         return {
             "status": "authenticated",
             "telegram_id": user.telegram_id,
