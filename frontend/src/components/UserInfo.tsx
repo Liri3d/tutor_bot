@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
 interface User {
   id: number
@@ -20,7 +20,7 @@ function UserInfo() {
         // Здесь будет реальный запрос к API
         // const response = await fetch('/api/user')
         // const data = await response.json()
-        
+
         // Пока используем mock-данные
         setTimeout(() => {
           setUser({

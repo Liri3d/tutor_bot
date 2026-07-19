@@ -1,64 +1,38 @@
-import React, { useState, useEffect } from 'react'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Dashboard from './pages/Dashboard'
-import { storage } from './services/api'
-import './App.css'
+// src/App.tsx
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import './styles/App.css';
+
+// Компонент для защиты маршрутов
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = localStorage.getItem('tutor_token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [showRegister, setShowRegister] = useState(false)
-  const [user, setUser] = useState(null)
-
-  // Проверяем, есть ли сохранённый пользователь
-  useEffect(() => {
-    const savedUser = storage.getUser()
-    if (savedUser) {
-      setUser(savedUser)
-      setIsAuthenticated(true)
-    }
-  }, [])
-
-  const handleLoginSuccess = (userData: any) => {
-    setUser(userData)
-    setIsAuthenticated(true)
-    setShowRegister(false)
-  }
-
-  const handleRegisterSuccess = (userData: any) => {
-    setUser(userData)
-    setIsAuthenticated(true)
-    setShowRegister(false)
-  }
-
-  const handleLogout = () => {
-    storage.clearUser()
-    setUser(null)
-    setIsAuthenticated(false)
-  }
-
-  // Если пользователь авторизован - показываем дашборд
-  if (isAuthenticated) {
-    return <Dashboard onLogout={handleLogout} />
-  }
-
-  // Если страница регистрации
-  if (showRegister) {
-    return (
-      <Register
-        onRegisterSuccess={handleRegisterSuccess}
-        onSwitchToLogin={() => setShowRegister(false)}
-      />
-    )
-  }
-
-  // Страница входа
   return (
-    <Login
-      onLoginSuccess={handleLoginSuccess}
-      onSwitchToRegister={() => setShowRegister(true)}
-    />
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

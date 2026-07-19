@@ -1,83 +1,63 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:80'
+// src/services/api.ts
+import axios from 'axios';
 
-export interface LoginData {
-  login: string
-  password: string
-}
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:80';
 
-export interface RegisterData {
-  login: string
-  password: string
-  first_name: string
-}
-
-export interface AuthResponse {
-  status: string
-  id: number
-  login: string
-  first_name: string
-  role: string
-  message: string
-}
-
-// API функции
-export const authApi = {
-  // Вход
-  login: async (data: LoginData): Promise<AuthResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.detail || 'Ошибка входа')
-    }
-
-    return response.json()
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
   },
+});
 
-  // Регистрация
-  register: async (data: RegisterData): Promise<AuthResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...data,
-        role: 'tutor'
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.detail || 'Ошибка регистрации')
-    }
-
-    return response.json()
-  },
-
-  // Проверка статуса (для будущих сессий)
-  checkAuth: async (): Promise<boolean> => {
-    // Здесь можно добавить проверку токена
-    return !!localStorage.getItem('user')
+// Интерцептор для добавления токена
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('tutor_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-}
+  return config;
+});
 
-// Хранилище для пользователя (простая замена сессии)
-export const storage = {
-  getUser: () => {
-    const user = localStorage.getItem('user')
-    return user ? JSON.parse(user) : null
-  },
-  setUser: (user: any) => {
-    localStorage.setItem('user', JSON.stringify(user))
-  },
-  clearUser: () => {
-    localStorage.removeItem('user')
+// Интерцептор для обработки ошибок
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('tutor_token');
+      localStorage.removeItem('tutor_user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
   }
-}
+);
+
+export const authAPI = {
+  register: (data: { login: string; password: string; first_name: string }) =>
+    api.post('/api/auth/register', data),
+
+  login: (data: { login: string; password: string }) =>
+    api.post('/api/auth/login', data),
+
+  logout: () => {
+    localStorage.removeItem('tutor_token');
+    localStorage.removeItem('tutor_user');
+  },
+};
+
+export const tutorAPI = {
+  getStats: (telegramId: number) =>
+    api.get(`/api/tutors/${telegramId}/stats`),
+
+  getStudents: (telegramId: number) =>
+    api.get(`/api/tutors/${telegramId}/students`),
+
+  getLessons: (telegramId: number) =>
+    api.get(`/api/tutors/${telegramId}/lessons`),
+
+  getInvites: (telegramId: number) =>
+    api.get(`/api/tutors/${telegramId}/invites`),
+
+  createInvite: (telegramId: number, studentName: string) =>
+    api.post(`/api/tutors/${telegramId}/invites`, { student_name: studentName }),
+};

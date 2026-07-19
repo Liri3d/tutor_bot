@@ -1,247 +1,227 @@
-import React, { useState } from 'react'
-import { authApi, storage } from '../services/api'
+// src/pages/Register.tsx
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { authAPI } from '../services/api';
 
-interface RegisterProps {
-  onRegisterSuccess: (user: any) => void
-  onSwitchToLogin: () => void
-}
+const Register: React.FC = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    login: '',
+    password: '',
+    confirmPassword: '',
+    first_name: '',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-function Register({ onRegisterSuccess, onSwitchToLogin }: RegisterProps) {
-  const [login, setLogin] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError('');
 
-    // Валидация
-    if (password !== confirmPassword) {
-      setError('Пароли не совпадают')
-      return
+    if (formData.password !== formData.confirmPassword) {
+      setError('Пароли не совпадают');
+      return;
     }
 
-    if (password.length < 6) {
-      setError('Пароль должен содержать минимум 6 символов')
-      return
+    if (formData.password.length < 6) {
+      setError('Пароль должен содержать минимум 6 символов');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const response = await authApi.register({
-        login,
-        password,
-        first_name: firstName || login,
-      })
-      
-      // Сохраняем пользователя
-      storage.setUser(response)
-      
-      // Вызываем callback успешной регистрации
-      onRegisterSuccess(response)
+      const response = await authAPI.register({
+        login: formData.login,
+        password: formData.password,
+        first_name: formData.first_name,
+      });
+
+      if (response.data.status === 'registered') {
+        navigate('/login', { 
+          state: { message: 'Регистрация успешна! Теперь войдите в систему.' }
+        });
+      }
     } catch (err: any) {
-      setError(err.message || 'Ошибка при регистрации')
+      setError(err.response?.data?.detail || 'Ошибка регистрации');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <h1 style={styles.title}>🎓 Tutor Bot</h1>
+          <h1 style={styles.title}>📚 Tutor Flow</h1>
           <p style={styles.subtitle}>Регистрация репетитора</p>
         </div>
 
-        {error && (
-          <div style={styles.errorBox}>
-            ❌ {error}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
+          <div style={styles.field}>
             <label style={styles.label}>Имя</label>
             <input
               type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              name="first_name"
+              value={formData.first_name}
+              onChange={handleChange}
               placeholder="Введите ваше имя"
               style={styles.input}
-              disabled={loading}
+              required
             />
           </div>
 
-          <div style={styles.inputGroup}>
+          <div style={styles.field}>
             <label style={styles.label}>Логин</label>
             <input
               type="text"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
+              name="login"
+              value={formData.login}
+              onChange={handleChange}
               placeholder="Придумайте логин"
               style={styles.input}
               required
-              disabled={loading}
             />
           </div>
 
-          <div style={styles.inputGroup}>
+          <div style={styles.field}>
             <label style={styles.label}>Пароль</label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
               placeholder="Минимум 6 символов"
               style={styles.input}
               required
-              disabled={loading}
             />
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Подтверждение пароля</label>
+          <div style={styles.field}>
+            <label style={styles.label}>Подтвердите пароль</label>
             <input
               type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
               placeholder="Повторите пароль"
               style={styles.input}
               required
-              disabled={loading}
             />
           </div>
 
+          {error && <div style={styles.error}>{error}</div>}
+
           <button
             type="submit"
+            style={styles.button}
             disabled={loading}
-            style={{
-              ...styles.button,
-              ...(loading ? styles.buttonDisabled : {})
-            }}
           >
-            {loading ? '⏳ Регистрация...' : '📝 Зарегистрироваться'}
+            {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
         </form>
 
         <div style={styles.footer}>
-          <span style={styles.footerText}>Уже есть аккаунт?</span>
-          <button
-            onClick={onSwitchToLogin}
-            style={styles.linkButton}
-            disabled={loading}
-          >
-            Войти
-          </button>
+          <span>Уже есть аккаунт? </span>
+          <Link to="/login" style={styles.link}>Войти</Link>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#F8FAFC',
     padding: '20px',
   },
   card: {
-    background: 'white',
-    borderRadius: '20px',
+    background: '#FFFFFF',
+    borderRadius: '16px',
     padding: '40px',
-    maxWidth: '400px',
+    maxWidth: '420px',
     width: '100%',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
   },
   header: {
     textAlign: 'center',
-    marginBottom: '30px',
+    marginBottom: '32px',
   },
   title: {
-    margin: 0,
     fontSize: '28px',
-    color: '#2d3748',
+    fontWeight: 600,
+    color: '#1E293B',
+    margin: '0 0 8px 0',
   },
   subtitle: {
-    margin: '8px 0 0 0',
-    color: '#718096',
-    fontSize: '16px',
-  },
-  errorBox: {
-    background: '#fed7d7',
-    color: '#c53030',
-    padding: '12px',
-    borderRadius: '8px',
-    marginBottom: '20px',
     fontSize: '14px',
-    textAlign: 'center',
+    color: '#64748B',
+    margin: 0,
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px',
+    gap: '16px',
   },
-  inputGroup: {
+  field: {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
   },
   label: {
     fontSize: '14px',
-    fontWeight: 600,
-    color: '#2d3748',
+    fontWeight: 500,
+    color: '#1E293B',
   },
   input: {
-    padding: '12px 16px',
-    border: '2px solid #e2e8f0',
-    borderRadius: '10px',
-    fontSize: '16px',
-    transition: 'border-color 0.2s',
+    padding: '10px 14px',
+    borderRadius: '8px',
+    border: '1px solid #E2E8F0',
+    fontSize: '14px',
     outline: 'none',
   },
   button: {
-    padding: '14px',
-    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    color: 'white',
+    padding: '12px',
+    borderRadius: '8px',
     border: 'none',
-    borderRadius: '10px',
+    background: '#3B82F6',
+    color: '#FFFFFF',
     fontSize: '16px',
-    fontWeight: 600,
+    fontWeight: 500,
     cursor: 'pointer',
-    transition: 'transform 0.2s, box-shadow 0.2s',
+    transition: 'background 0.2s',
+    marginTop: '8px',
   },
-  buttonDisabled: {
-    opacity: 0.6,
-    cursor: 'not-allowed',
+  error: {
+    padding: '10px',
+    borderRadius: '8px',
+    background: '#FEE2E2',
+    color: '#991B1B',
+    fontSize: '14px',
+    textAlign: 'center',
   },
   footer: {
-    marginTop: '20px',
+    marginTop: '24px',
     textAlign: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '8px',
-  },
-  footerText: {
-    color: '#718096',
     fontSize: '14px',
+    color: '#64748B',
   },
-  linkButton: {
-    background: 'none',
-    border: 'none',
-    color: '#f5576c',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    textDecoration: 'underline',
-    padding: 0,
+  link: {
+    color: '#3B82F6',
+    textDecoration: 'none',
+    fontWeight: 500,
   },
-}
+};
 
-export default Register
+export default Register;

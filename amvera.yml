@@ -1,13 +1,19 @@
+# amvera.yml
 meta:
   environment: python
   toolchain:
     name: pip
     version: "3.11"
+
 build:
   requirementsPath: requirements.txt
   useCache: true
+  # Собираем фронтенд перед запуском
+  preBuild:
+    - cd frontend && npm install && npm run build
+
 run:
   persistenceMount: /data
-  scriptName: main.py
+  scriptName: run.py
   containerPort: 80
   servicePort: 80

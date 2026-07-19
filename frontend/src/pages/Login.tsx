@@ -1,53 +1,54 @@
-import React, { useState } from 'react'
-import { authApi, storage } from '../services/api'
+// src/pages/Login.tsx
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { authAPI } from '../services/api';
 
-interface LoginProps {
-  onLoginSuccess: (user: any) => void
-  onSwitchToRegister: () => void
-}
-
-function Login({ onLoginSuccess, onSwitchToRegister }: LoginProps) {
-  const [login, setLogin] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
     try {
-      const response = await authApi.login({ login, password })
+      const response = await authAPI.login({ login, password });
       
-      // Сохраняем пользователя
-      storage.setUser(response)
-      
-      // Вызываем callback успешного входа
-      onLoginSuccess(response)
+      if (response.data.status === 'authenticated') {
+        // Сохраняем данные пользователя
+        localStorage.setItem('tutor_token', response.data.id.toString());
+        localStorage.setItem('tutor_user', JSON.stringify({
+          id: response.data.id,
+          login: response.data.login,
+          first_name: response.data.first_name,
+          role: response.data.role,
+        }));
+        
+        navigate('/dashboard');
+      } else {
+        setError('Ошибка входа. Проверьте логин и пароль.');
+      }
     } catch (err: any) {
-      setError(err.message || 'Ошибка при входе')
+      setError(err.response?.data?.detail || 'Ошибка подключения к серверу');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <h1 style={styles.title}>🎓 Tutor Bot</h1>
-          <p style={styles.subtitle}>Вход в систему</p>
+          <h1 style={styles.title}>📚 Tutor Flow</h1>
+          <p style={styles.subtitle}>Вход в систему управления расписанием</p>
         </div>
 
-        {error && (
-          <div style={styles.errorBox}>
-            ❌ {error}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
+          <div style={styles.field}>
             <label style={styles.label}>Логин</label>
             <input
               type="text"
@@ -56,11 +57,10 @@ function Login({ onLoginSuccess, onSwitchToRegister }: LoginProps) {
               placeholder="Введите логин"
               style={styles.input}
               required
-              disabled={loading}
             />
           </div>
 
-          <div style={styles.inputGroup}>
+          <div style={styles.field}>
             <label style={styles.label}>Пароль</label>
             <input
               type="password"
@@ -69,154 +69,121 @@ function Login({ onLoginSuccess, onSwitchToRegister }: LoginProps) {
               placeholder="Введите пароль"
               style={styles.input}
               required
-              disabled={loading}
             />
           </div>
 
+          {error && <div style={styles.error}>{error}</div>}
+
           <button
             type="submit"
+            style={styles.button}
             disabled={loading}
-            style={{
-              ...styles.button,
-              ...(loading ? styles.buttonDisabled : {})
-            }}
           >
-            {loading ? '⏳ Вход...' : '🚀 Войти'}
+            {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
         <div style={styles.footer}>
-          <span style={styles.footerText}>Нет аккаунта?</span>
-          <button
-            onClick={onSwitchToRegister}
-            style={styles.linkButton}
-            disabled={loading}
-          >
-            Зарегистрироваться
-          </button>
-        </div>
-
-        <div style={styles.demoInfo}>
-          <p style={styles.demoText}>Демо-данные:</p>
-          <p style={styles.demoText}>Логин: <strong>tutor</strong> | Пароль: <strong>123456</strong></p>
+          <span>Нет аккаунта? </span>
+          <Link to="/register" style={styles.link}>Зарегистрироваться</Link>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-// Стили (вынесены отдельно для чистоты)
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#F8FAFC',
     padding: '20px',
   },
   card: {
-    background: 'white',
-    borderRadius: '20px',
+    background: '#FFFFFF',
+    borderRadius: '16px',
     padding: '40px',
-    maxWidth: '400px',
+    maxWidth: '420px',
     width: '100%',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
   },
   header: {
     textAlign: 'center',
-    marginBottom: '30px',
+    marginBottom: '32px',
   },
   title: {
-    margin: 0,
     fontSize: '28px',
-    color: '#2d3748',
+    fontWeight: 600,
+    color: '#1E293B',
+    margin: '0 0 8px 0',
   },
   subtitle: {
-    margin: '8px 0 0 0',
-    color: '#718096',
-    fontSize: '16px',
-  },
-  errorBox: {
-    background: '#fed7d7',
-    color: '#c53030',
-    padding: '12px',
-    borderRadius: '8px',
-    marginBottom: '20px',
     fontSize: '14px',
-    textAlign: 'center',
+    color: '#64748B',
+    margin: 0,
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
   },
-  inputGroup: {
+  field: {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
   },
   label: {
     fontSize: '14px',
-    fontWeight: 600,
-    color: '#2d3748',
+    fontWeight: 500,
+    color: '#1E293B',
   },
   input: {
-    padding: '12px 16px',
-    border: '2px solid #e2e8f0',
-    borderRadius: '10px',
-    fontSize: '16px',
+    padding: '10px 14px',
+    borderRadius: '8px',
+    border: '1px solid #E2E8F0',
+    fontSize: '14px',
     transition: 'border-color 0.2s',
     outline: 'none',
   },
-  button: {
-    padding: '14px',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    fontSize: '16px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'transform 0.2s, box-shadow 0.2s',
+  inputFocus: {
+    borderColor: '#3B82F6',
+    boxShadow: '0 0 0 3px rgba(59,130,246,0.1)',
   },
-  buttonDisabled: {
-    opacity: 0.6,
-    cursor: 'not-allowed',
+  button: {
+    padding: '12px',
+    borderRadius: '8px',
+    border: 'none',
+    background: '#3B82F6',
+    color: '#FFFFFF',
+    fontSize: '16px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+  },
+  buttonHover: {
+    background: '#2563EB',
+  },
+  error: {
+    padding: '10px',
+    borderRadius: '8px',
+    background: '#FEE2E2',
+    color: '#991B1B',
+    fontSize: '14px',
+    textAlign: 'center',
   },
   footer: {
-    marginTop: '20px',
+    marginTop: '24px',
     textAlign: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '8px',
-  },
-  footerText: {
-    color: '#718096',
     fontSize: '14px',
+    color: '#64748B',
   },
-  linkButton: {
-    background: 'none',
-    border: 'none',
-    color: '#667eea',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    textDecoration: 'underline',
-    padding: 0,
+  link: {
+    color: '#3B82F6',
+    textDecoration: 'none',
+    fontWeight: 500,
   },
-  demoInfo: {
-    marginTop: '20px',
-    padding: '12px',
-    background: '#f7fafc',
-    borderRadius: '8px',
-    textAlign: 'center',
-  },
-  demoText: {
-    margin: '4px 0',
-    fontSize: '13px',
-    color: '#4a5568',
-  },
-}
+};
 
-export default Login
+export default Login;
