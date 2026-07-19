@@ -8,9 +8,6 @@ meta:
 build:
   requirementsPath: requirements.txt
   useCache: true
-  # Собираем фронтенд перед запуском
-  preBuild:
-    - cd frontend && npm install && npm run build
 
 run:
   persistenceMount: /data
