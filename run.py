@@ -85,6 +85,7 @@ async def run_api():
 #     except Exception as e:
 #         print(f"❌ Ошибка при запуске фронтенда: {e}")
 
+
 async def main():
     await SessionService.init_db()
     
