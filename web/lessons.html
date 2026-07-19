@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Flow - Уроки</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div x-data="lessonsApp()" x-init="init()" class="app">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📚 Tutor Flow</div>
+                <nav class="nav">
+                    <a href="/static/dashboard.html">Дашборд</a>
+                    <a href="/static/students.html">Ученики</a>
+                    <a href="/static/schedule.html">Расписание</a>
+                    <a href="/static/lessons.html" class="active">Уроки</a>
+                    <a href="/static/invites.html">Приглашения</a>
+                    <a href="/static/settings.html">Настройки</a>
+                </nav>
+                <div class="user-menu">
+                    <span x-text="user?.first_name || 'Репетитор'"></span>
+                    <button @click="logout()" class="btn-logout">Выйти</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Контент -->
+        <main class="main">
+            <div class="page-header">
+                <h2>📚 Мои уроки</h2>
+                <button @click="openModal()" class="btn-primary">➕ Создать урок</button>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="filters">
+                <input type="text" x-model="search" @input="filterLessons()" placeholder="Поиск по названию или ученику..." class="search-input">
+                <select x-model="filterStatus" @change="filterLessons()" class="filter-select">
+                    <option value="all">Все статусы</option>
+                    <option value="scheduled">Запланированные</option>
+                    <option value="completed">Завершённые</option>
+                    <option value="cancelled">Отменённые</option>
+                    <option value="missed">Пропущенные</option>
+                </select>
+            </div>
+
+            <!-- Список уроков -->
+            <div class="lessons-list">
+                <template x-for="lesson in filteredLessons" :key="lesson.id">
+                    <div class="lesson-item">
+                        <div class="lesson-info">
+                            <div class="lesson-title" x-text="lesson.title || lesson.subject"></div>
+                            <div class="lesson-meta">
+                                <span>👤 <span x-text="lesson.student || lesson.student_name"></span></span>
+                                <span>📅 <span x-text="formatDate(lesson.date || lesson.start_time)"></span></span>
+                                <span>🕐 <span x-text="lesson.time || formatTime(lesson.start_time)"></span></span>
+                                <span>⏱ <span x-text="lesson.duration || lesson.duration_minutes + ' мин'"></span></span>
+                            </div>
+                            <div x-show="lesson.notes" class="lesson-notes" x-text="'📝 ' + lesson.notes"></div>
+                        </div>
+                        <div class="lesson-right">
+                            <span class="lesson-status" :class="lesson.status" x-text="getLessonStatus(lesson.status)"></span>
+                            <div class="lesson-actions">
+                                <button @click="editLesson(lesson.id)" class="icon-btn" title="Редактировать">✏️</button>
+                                <button @click="deleteLesson(lesson.id)" class="icon-btn danger" title="Удалить">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                
+                <div x-show="filteredLessons.length === 0" class="empty-state">
+                    <span style="font-size: 48px;">📅</span>
+                    <h3>Нет уроков</h3>
+                    <p x-text="search || filterStatus !== 'all' ? 'Попробуйте изменить фильтры' : 'Создайте свой первый урок!'"></p>
+                    <button @click="openModal()" class="btn-primary" x-show="!search && filterStatus === 'all'">➕ Создать урок</button>
+                </div>
+            </div>
+
+            <!-- Модальное окно создания урока -->
+            <div x-show="modalOpen" class="modal" @click.away="closeModal()">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 x-text="editingId ? 'Редактировать урок' : 'Создать урок'"></h2>
+                        <button @click="closeModal()" class="close-btn">&times;</button>
+                    </div>
+                    <form @submit.prevent="saveLesson()" class="modal-form">
+                        <div class="form-group">
+                            <label>Название урока *</label>
+                            <input type="text" x-model="form.title" placeholder="Например: Алгебра, 7 класс" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ученик *</label>
+                            <input type="text" x-model="form.student" placeholder="Имя ученика" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Дата *</label>
+                                <input type="date" x-model="form.date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Время *</label>
+                                <input type="time" x-model="form.time" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Длительность (мин)</label>
+                            <select x-model="form.duration">
+                                <option value="30">30 мин</option>
+                                <option value="45">45 мин</option>
+                                <option value="60" selected>60 мин</option>
+                                <option value="90">90 мин</option>
+                                <option value="120">120 мин</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Статус</label>
+                            <select x-model="form.status">
+                                <option value="scheduled">Запланирован</option>
+                                <option value="completed">Завершён</option>
+                                <option value="cancelled">Отменён</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Заметки</label>
+                            <textarea x-model="form.notes" rows="3" placeholder="Дополнительные заметки..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" @click="closeModal()" class="btn-secondary">Отмена</button>
+                            <button type="submit" class="btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

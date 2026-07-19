@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Flow - Регистрация</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div x-data="registerApp()" x-init="init()" class="container">
+        <div class="auth-card">
+            <div class="logo">📚 Tutor Flow</div>
+            <h1>Регистрация репетитора</h1>
+            <p class="subtitle">Создайте аккаунт для управления расписанием</p>
+
+            <!-- Сообщение -->
+            <div x-show="message" class="message" x-text="message"></div>
+
+            <!-- Форма регистрации -->
+            <form @submit.prevent="register()" class="auth-form">
+                <div class="form-group">
+                    <label>Имя *</label>
+                    <input 
+                        type="text" 
+                        x-model="form.first_name" 
+                        placeholder="Введите ваше имя"
+                        required
+                        minlength="2"
+                    >
+                    <small class="hint">Минимум 2 символа</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Логин *</label>
+                    <input 
+                        type="text" 
+                        x-model="form.login" 
+                        placeholder="Придумайте логин"
+                        required
+                        minlength="3"
+                    >
+                    <small class="hint">Минимум 3 символа, только латиница и цифры</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Пароль *</label>
+                    <input 
+                        type="password" 
+                        x-model="form.password" 
+                        placeholder="Минимум 6 символов"
+                        required
+                        minlength="6"
+                    >
+                    <small class="hint">Минимум 6 символов</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Подтвердите пароль *</label>
+                    <input 
+                        type="password" 
+                        x-model="form.confirmPassword" 
+                        placeholder="Повторите пароль"
+                        required
+                    >
+                </div>
+
+                <!-- Ошибки -->
+                <div x-show="error" class="error" x-text="error"></div>
+
+                <!-- Кнопка -->
+                <button 
+                    type="submit" 
+                    class="btn-primary" 
+                    :disabled="loading"
+                    x-text="loading ? 'Регистрация...' : 'Зарегистрироваться'"
+                ></button>
+            </form>
+
+            <!-- Ссылка на вход -->
+            <div class="auth-footer">
+                <span>Уже есть аккаунт?</span>
+                <a href="/static/index.html">Войти</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function registerApp() {
+            return {
+                form: {
+                    first_name: '',
+                    login: '',
+                    password: '',
+                    confirmPassword: ''
+                },
+                loading: false,
+                error: '',
+                message: '',
+
+                init() {
+                    // Проверяем, есть ли сообщение от предыдущей страницы
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const msg = urlParams.get('message');
+                    if (msg) {
+                        this.message = decodeURIComponent(msg);
+                        // Убираем сообщение через 3 секунды
+                        setTimeout(() => {
+                            this.message = '';
+                        }, 5000);
+                    }
+                },
+
+                async register() {
+                    // Валидация
+                    if (!this.form.first_name || this.form.first_name.length < 2) {
+                        this.error = 'Имя должно содержать минимум 2 символа';
+                        return;
+                    }
+
+                    if (!this.form.login || this.form.login.length < 3) {
+                        this.error = 'Логин должен содержать минимум 3 символа';
+                        return;
+                    }
+
+                    if (!this.form.password || this.form.password.length < 6) {
+                        this.error = 'Пароль должен содержать минимум 6 символов';
+                        return;
+                    }
+
+                    if (this.form.password !== this.form.confirmPassword) {
+                        this.error = 'Пароли не совпадают';
+                        return;
+                    }
+
+                    this.loading = true;
+                    this.error = '';
+
+                    try {
+                        const response = await fetch('/api/auth/register', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                login: this.form.login,
+                                password: this.form.password,
+                                first_name: this.form.first_name
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.status === 'registered') {
+                            // Успешная регистрация
+                            this.message = '✅ ' + (data.message || 'Регистрация успешна!');
+                            
+                            // Очищаем форму
+                            this.form = {
+                                first_name: '',
+                                login: '',
+                                password: '',
+                                confirmPassword: ''
+                            };
+
+                            // Перенаправляем на страницу входа через 2 секунды
+                            setTimeout(() => {
+                                window.location.href = '/message=' + 
+                                    encodeURIComponent('Регистрация успешна! Теперь войдите в систему.');
+                            }, 2000);
+
+                        } else {
+                            this.error = data.detail || 'Ошибка регистрации';
+                        }
+
+                    } catch (e) {
+                        console.error('Ошибка регистрации:', e);
+                        this.error = 'Ошибка подключения к серверу';
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>

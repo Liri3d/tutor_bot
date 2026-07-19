@@ -1,10 +1,11 @@
+# services/auth_svc.py
 import secrets
 import hashlib
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db import tutor_crud
-from db import student_crud
+from db.tutor_crud import tutor_crud
+from db.student_crud import student_crud
 from db.models import Tutor, Student
 
 
@@ -35,11 +36,15 @@ class AuthService:
         username: Optional[str] = None
     ) -> Tutor:
         """Регистрация репетитора"""
+        # Проверяем, существует ли пользователь с таким логином
         existing = await tutor_crud.get_by_login(session, login)
         if existing:
             raise ValueError("Логин уже занят")
         
+        # Хэшируем пароль
         password_hash = AuthService.hash_password(password)
+        
+        # Создаем репетитора
         tutor = await tutor_crud.create(
             session=session,
             login=login,
@@ -65,24 +70,24 @@ class AuthService:
         
         return tutor
 
-    @staticmethod
-    async def register_student(
-        session: AsyncSession,
-        telegram_id: int,
-        first_name: str,
-        username: Optional[str] = None,
-        phone: Optional[str] = None
-    ) -> Student:
-        """Регистрация ученика через Telegram"""
-        existing = await student_crud.get_by_telegram_id(session, telegram_id)
-        if existing:
-            raise ValueError("Пользователь с таким Telegram ID уже существует")
+    # @staticmethod
+    # async def register_student(
+    #     session: AsyncSession,
+    #     telegram_id: int,
+    #     first_name: str,
+    #     username: Optional[str] = None,
+    #     phone: Optional[str] = None
+    # ) -> Student:
+    #     """Регистрация ученика через Telegram"""
+    #     existing = await student_crud.get_by_telegram_id(session, telegram_id)
+    #     if existing:
+    #         raise ValueError("Пользователь с таким Telegram ID уже существует")
         
-        student = await student_crud.create(
-            session=session,
-            telegram_id=telegram_id,
-            first_name=first_name,
-            username=username,
-            phone=phone
-        )
-        return student
+    #     student = await student_crud.create(
+    #         session=session,
+    #         telegram_id=telegram_id,
+    #         first_name=first_name,
+    #         username=username,
+    #         phone=phone
+    #     )
+    #     return student

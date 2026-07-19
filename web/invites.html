@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Flow - Приглашения</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div x-data="invitesApp()" x-init="init()" class="app">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📚 Tutor Flow</div>
+                <nav class="nav">
+                    <a href="/static/dashboard.html">Дашборд</a>
+                    <a href="/static/students.html">Ученики</a>
+                    <a href="/static/schedule.html">Расписание</a>
+                    <a href="/static/lessons.html">Уроки</a>
+                    <a href="/static/invites.html" class="active">Приглашения</a>
+                    <a href="/static/settings.html">Настройки</a>
+                </nav>
+                <div class="user-menu">
+                    <span x-text="user?.first_name || 'Репетитор'"></span>
+                    <button @click="logout()" class="btn-logout">Выйти</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Контент -->
+        <main class="main">
+            <div class="page-header">
+                <h2>🔗 Приглашения</h2>
+                <button @click="generateInvite()" class="btn-primary">🔄 Сгенерировать приглашение</button>
+            </div>
+
+            <!-- Генерация приглашения -->
+            <div class="invite-generator" x-show="inviteCode">
+                <div class="invite-code-box">
+                    <code x-text="inviteCode"></code>
+                    <button @click="copyInvite()" class="btn-secondary">📋 Копировать ссылку</button>
+                </div>
+                <p class="invite-hint">Срок действия ссылки — 7 дней</p>
+            </div>
+
+            <!-- Список приглашений -->
+            <div class="invites-list">
+                <h3>📋 Список приглашений</h3>
+                <table class="invite-table">
+                    <thead>
+                        <tr>
+                            <th>Ученик</th>
+                            <th>Код</th>
+                            <th>Срок действия</th>
+                            <th>Статус</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="invite in invites" :key="invite.code">
+                            <tr>
+                                <td x-text="invite.student_name"></td>
+                                <td><code x-text="invite.code"></code></td>
+                                <td x-text="formatDate(invite.expires_at)"></td>
+                                <td>
+                                    <span class="status-badge" :class="invite.is_used ? 'inactive' : 'active'">
+                                        <span x-text="invite.is_used ? 'Использовано' : 'Активно'"></span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <button @click="copyInviteLink(invite.code)" class="copy-btn">📋 Копировать</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <div x-show="invites.length === 0" class="empty-state">
+                    <span style="font-size: 48px;">🔗</span>
+                    <h3>Нет приглашений</h3>
+                    <p>Создайте приглашение для нового ученика</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

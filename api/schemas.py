@@ -54,7 +54,7 @@ class RegisterRequest(BaseModel):
     login: str  
     password: str
     first_name: str
-    role: str = "tutor" 
+
 
 class LoginRequest(BaseModel):
     login: str
