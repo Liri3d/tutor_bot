@@ -38,67 +38,9 @@ async def run_api():
     config = uvicorn.Config(app, host=host, port=port, loop="asyncio")
     server = uvicorn.Server(config)
     await server.serve()
-
-# async def run_frontend():
-#     """Запуск фронтенда в режиме разработки"""
-#     if not RUN_FRONTEND:
-#         print("⏭️ Запуск фронтенда пропущен (RUN_FRONTEND=false)")
-#         return
     
-#     frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
-    
-#     if not os.path.exists(frontend_dir):
-#         print("⚠️ Папка frontend не найдена")
-#         return
-    
-#     print("🔧 Запуск фронтенда в режиме разработки...")
-    
-#     try:
-#         # Запускаем npm run dev
-#         process = await asyncio.create_subprocess_exec(
-#             "npm", "run", "dev",
-#             cwd=frontend_dir,
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.PIPE
-#         )
-        
-#         # Читаем вывод в фоне
-#         async def read_output(pipe, name):
-#             while True:
-#                 line = await pipe.readline()
-#                 if not line:
-#                     break
-#                 print(f"[Frontend] {line.decode().strip()}")
-        
-#         # Запускаем чтение вывода
-#         await asyncio.gather(
-#             read_output(process.stdout, "stdout"),
-#             read_output(process.stderr, "stderr"),
-#             return_exceptions=True
-#         )
-        
-#         # Ждем завершения процесса (это не должно произойти)
-#         await process.wait()
-        
-#     except FileNotFoundError:
-#         print("❌ npm не найден. Убедитесь, что Node.js установлен.")
-#     except Exception as e:
-#         print(f"❌ Ошибка при запуске фронтенда: {e}")
-
-
 async def main():
     await SessionService.init_db()
-    
-    # tasks = [
-    #     run_bot(),
-    #     run_api(),
-    # ]
-
-    # if ENVIRONMENT == "development" and RUN_FRONTEND:
-    #     tasks.append(run_frontend())
-    
-    # await asyncio.gather(*tasks)
-
     await asyncio.gather(run_bot(), run_api())
 
 if __name__ == "__main__":
