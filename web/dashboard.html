@@ -30,7 +30,7 @@
 
         <!-- Контент -->
         <main class="main">
-            <h2 class="greeting" x-text="'Добро пожаловать, ' + (user?.first_name || 'Репетитор') + '! 👋'"></h2>
+            <h2 class="greeting" x-text="'Добро пожаловать, ' + (user?.login) + '! 👋'"></h2>
 
             <!-- Метрики -->
             <div class="metrics-grid">
@@ -41,7 +41,7 @@
                         <div class="metric-value" x-text="stats.total_students || 0"></div>
                     </div>
                 </div>
-                
+             
                 <div class="metric-card">
                     <div class="metric-icon">📅</div>
                     <div>
@@ -89,6 +89,6 @@
         </main>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

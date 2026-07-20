@@ -1,17 +1,9 @@
-# api/main.py
-
-from aiogram import Bot
-from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-import hashlib
-import hmac
 import os
-from datetime import datetime
-from telegram.error import InvalidToken 
 
 from config import BOT_ID, BOT_USERNAME
 
@@ -33,12 +25,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# ========== СТАТИЧЕСКИЕ ФАЙЛЫ ==========
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# ========== СТРАНИЦЫ ==========
 @app.get("/")
 async def serve_index():
     """Главная страница - страница входа"""
@@ -97,79 +86,78 @@ async def serve_settings():
 
 
 # ========== API эндпоинты ==========
-@app.get("/api/tutors/{telegram_id}/students", response_model=List[StudentResponse])
-async def get_tutor_students(
-    telegram_id: int,
-    session: AsyncSession = Depends(SessionService.get_session)
-):
-    """
-    Получить всех учеников репетитора.
-    """
-    # Временная заглушка
-    return []
+# @app.get("/api/tutors/{telegram_id}/students", response_model=List[StudentResponse])
+# async def get_tutor_students(
+#     telegram_id: int,
+#     session: AsyncSession = Depends(SessionService.get_session)
+# ):
+#     """
+#     Получить всех учеников репетитора.
+#     """
+#     # Временная заглушка
+#     return []
 
 
-@app.get("/api/tutors/{telegram_id}/stats", response_model=TutorStatsResponse)
-async def get_tutor_stats(
-    telegram_id: int,
-    session: AsyncSession = Depends(SessionService.get_session)
-):
-    """
-    Получить статистику репетитора.
-    """
-    return TutorStatsResponse(
-        total_students=0,
-        active_students=0,
-        lessons_this_week=0,
-        lessons_this_month=0,
-    )
+# @app.get("/api/tutors/{telegram_id}/stats", response_model=TutorStatsResponse)
+# async def get_tutor_stats(
+#     telegram_id: int,
+#     session: AsyncSession = Depends(SessionService.get_session)
+# ):
+#     """
+#     Получить статистику репетитора.
+#     """
+#     return TutorStatsResponse(
+#         total_students=0,
+#         active_students=0,
+#         lessons_this_week=0,
+#         lessons_this_month=0,
+#     )
 
 
-@app.get("/api/tutors/{telegram_id}/lessons", response_model=List[LessonResponse])
-async def get_tutor_lessons(
-    telegram_id: int,
-    date_from: str = None,
-    date_to: str = None,
-    session: AsyncSession = Depends(SessionService.get_session)
-):
-    """
-    Получить занятия репетитора.
-    """
-    return []
+# @app.get("/api/tutors/{telegram_id}/lessons", response_model=List[LessonResponse])
+# async def get_tutor_lessons(
+#     telegram_id: int,
+#     date_from: str = None,
+#     date_to: str = None,
+#     session: AsyncSession = Depends(SessionService.get_session)
+# ):
+#     """
+#     Получить занятия репетитора.
+#     """
+#     return []
 
 
-@app.get("/api/tutors/{telegram_id}/invites", response_model=List[InviteResponse])
-async def get_tutor_invites(
-    telegram_id: int,
-    session: AsyncSession = Depends(SessionService.get_session)
-):
-    """
-    Получить активные приглашения репетитора.
-    """
-    return []
+# @app.get("/api/tutors/{telegram_id}/invites", response_model=List[InviteResponse])
+# async def get_tutor_invites(
+#     telegram_id: int,
+#     session: AsyncSession = Depends(SessionService.get_session)
+# ):
+#     """
+#     Получить активные приглашения репетитора.
+#     """
+#     return []
 
 
-@app.post("/api/tutors/{telegram_id}/invites")
-async def create_invite(
-    telegram_id: int,
-    student_name: str,
-    session: AsyncSession = Depends(SessionService.get_session)
-):
-    """
-    Создать приглашение для ученика.
-    """
-    from datetime import datetime, timedelta
-    import secrets
+# @app.post("/api/tutors/{telegram_id}/invites")
+# async def create_invite(
+#     telegram_id: int,
+#     student_name: str,
+#     session: AsyncSession = Depends(SessionService.get_session)
+# ):
+#     """
+#     Создать приглашение для ученика.
+#     """
+#     from datetime import datetime, timedelta
+#     import secrets
     
-    return {
-        "code": secrets.token_urlsafe(8)[:12],
-        "student_name": student_name,
-        "expires_at": datetime.now() + timedelta(days=7),
-        "link": f"https://t.me/{BOT_USERNAME}?start=invite_test"
-    }
+#     return {
+#         "code": secrets.token_urlsafe(8)[:12],
+#         "student_name": student_name,
+#         "expires_at": datetime.now() + timedelta(days=7),
+#         "link": f"https://t.me/{BOT_USERNAME}?start=invite_test"
+#     }
 
 
-# ========== АВТОРИЗАЦИЯ ==========
 
 @app.post("/api/auth/register")
 async def register(
@@ -195,7 +183,6 @@ async def register(
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/api/auth/login")
 async def login(

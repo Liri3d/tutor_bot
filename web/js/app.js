@@ -1,6 +1,3 @@
-// web/js/app.js
-
-// ========== Авторизация ==========
 function authApp() {
     return {
         // Данные формы
@@ -35,7 +32,7 @@ function authApp() {
                 
                 // 3. Получаем ответ от сервера
                 const data = await response.json();
-                
+
                 // 4. Проверяем успешность
                 if (response.ok && data.status === 'authenticated') {
                     // 4a. Сохраняем данные пользователя
@@ -73,11 +70,22 @@ function authApp() {
             const msg = urlParams.get('message');
             if (msg) {
                 this.message = decodeURIComponent(msg);
-                setTimeout(() => {
-                    this.message = '';
-                }, 5000);
+                // setTimeout(() => {
+                //     this.message = '';
+                // }, 5000);
             }
             
+            // Автозаполнение логина
+            const login = urlParams.get('login');
+                if (login) {
+                    this.loginData.username = decodeURIComponent(login);
+                    // Можно автоматически поставить фокус на поле пароля
+                    setTimeout(() => {
+                        const passwordInput = document.querySelector('input[type="password"]');
+                        if (passwordInput) passwordInput.focus();
+                    }, 100);
+                }
+
             // Проверяем, залогинен ли пользователь
             const token = localStorage.getItem('tutor_token');
             if (token) {
@@ -87,170 +95,6 @@ function authApp() {
     };
 }
 
-// ========== Дашборд ==========
-function dashboardApp() {
-    return {
-        user: null,
-        stats: {
-            total_students: 0,
-            active_students: 0,
-            lessons_this_week: 0,
-            lessons_this_month: 0
-        },
-        
-        async init() {
-            await this.loadUser();
-            if (this.user) {
-                await this.loadStats();
-            }
-        },
-        
-        loadUser() {
-            const userData = localStorage.getItem('tutor_user');
-            if (userData) {
-                this.user = JSON.parse(userData);
-            } else {
-                window.location.href = '/static/index.html';
-            }
-        },
-        
-        async loadStats() {
-            try {
-                const response = await fetch(`/api/tutors/${this.user.id}/stats`);
-                const data = await response.json();
-                this.stats = data;
-            } catch (e) {
-                console.error('Ошибка загрузки статистики:', e);
-            }
-        },
-        
-        logout() {
-            localStorage.removeItem('tutor_token');
-            localStorage.removeItem('tutor_user');
-            window.location.href = '/static/index.html';
-        }
-    };
-}
-
-// ========== Ученики ==========
-function studentsApp() {
-    return {
-        user: null,
-        students: [],
-        filteredStudents: [],
-        search: '',
-        filterStatus: 'all',
-        modalOpen: false,
-        newStudent: {
-            name: '',
-            telegram: '',
-            subject: '',
-            lessons: 10,
-            price: 1500
-        },
-        
-        async init() {
-            await this.loadUser();
-            if (this.user) {
-                await this.loadStudents();
-            }
-        },
-        
-        loadUser() {
-            const userData = localStorage.getItem('tutor_user');
-            if (userData) {
-                this.user = JSON.parse(userData);
-            } else {
-                window.location.href = '/static/index.html';
-            }
-        },
-        
-        async loadStudents() {
-            try {
-                const response = await fetch(`/api/tutors/${this.user.id}/students`);
-                const data = await response.json();
-                this.students = data;
-                this.filterStudents();
-            } catch (e) {
-                console.error('Ошибка загрузки учеников:', e);
-                this.students = [];
-            }
-        },
-        
-        filterStudents() {
-            const searchLower = this.search.toLowerCase();
-            this.filteredStudents = this.students.filter(s => {
-                const matchSearch = s.name.toLowerCase().includes(searchLower) ||
-                    (s.telegram && s.telegram.toLowerCase().includes(searchLower));
-                const matchStatus = this.filterStatus === 'all' || s.status === this.filterStatus;
-                return matchSearch && matchStatus;
-            });
-        },
-        
-        getStatusText(status) {
-            const map = {
-                'active': 'Активен',
-                'paused': 'Приостановлен',
-                'inactive': 'Неактивен'
-            };
-            return map[status] || status;
-        },
-        
-        openModal() {
-            this.modalOpen = true;
-            this.newStudent = { name: '', telegram: '', subject: '', lessons: 10, price: 1500 };
-        },
-        
-        closeModal() {
-            this.modalOpen = false;
-        },
-        
-        async addStudent() {
-            if (!this.newStudent.name) {
-                alert('Введите имя ученика');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/tutors/${this.user.id}/students`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.newStudent)
-                });
-                
-                if (response.ok) {
-                    await this.loadStudents();
-                    this.closeModal();
-                }
-            } catch (e) {
-                console.error('Ошибка добавления ученика:', e);
-            }
-        },
-        
-        viewStudent(id) {
-            window.location.href = `/static/student.html?id=${id}`;
-        },
-        
-        async deleteStudent(id) {
-            if (!confirm('Удалить ученика?')) return;
-            
-            try {
-                await fetch(`/api/tutors/${this.user.id}/students/${id}`, {
-                    method: 'DELETE'
-                });
-                await this.loadStudents();
-            } catch (e) {
-                console.error('Ошибка удаления ученика:', e);
-            }
-        },
-        
-        logout() {
-            localStorage.removeItem('tutor_token');
-            localStorage.removeItem('tutor_user');
-            window.location.href = '/static/index.html';
-        }
-    };
-}
 
 // ========== Уроки ==========
 function lessonsApp() {
@@ -417,83 +261,3 @@ function lessonsApp() {
     };
 }
 
-// ========== Приглашения ==========
-function invitesApp() {
-    return {
-        user: null,
-        invites: [],
-        inviteCode: '',
-        
-        async init() {
-            await this.loadUser();
-            if (this.user) {
-                await this.loadInvites();
-            }
-        },
-        
-        loadUser() {
-            const userData = localStorage.getItem('tutor_user');
-            if (userData) {
-                this.user = JSON.parse(userData);
-            } else {
-                window.location.href = '/static/index.html';
-            }
-        },
-        
-        async loadInvites() {
-            try {
-                const response = await fetch(`/api/tutors/${this.user.id}/invites`);
-                const data = await response.json();
-                this.invites = data;
-            } catch (e) {
-                console.error('Ошибка загрузки приглашений:', e);
-                this.invites = [];
-            }
-        },
-        
-        async generateInvite() {
-            const studentName = prompt('Введите имя ученика:');
-            if (!studentName) return;
-            
-            try {
-                const response = await fetch(`/api/tutors/${this.user.id}/invites`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ student_name: studentName })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    this.inviteCode = data.code;
-                    await this.loadInvites();
-                }
-            } catch (e) {
-                console.error('Ошибка создания приглашения:', e);
-            }
-        },
-        
-        copyInvite() {
-            const link = `${window.location.origin}/api/invite/${this.inviteCode}`;
-            navigator.clipboard?.writeText(link);
-            alert('Ссылка скопирована!');
-        },
-        
-        copyInviteLink(code) {
-            const link = `${window.location.origin}/api/invite/${code}`;
-            navigator.clipboard?.writeText(link);
-            alert('Ссылка скопирована!');
-        },
-        
-        formatDate(dateStr) {
-            if (!dateStr) return '';
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        },
-        
-        logout() {
-            localStorage.removeItem('tutor_token');
-            localStorage.removeItem('tutor_user');
-            window.location.href = '/static/index.html';
-        }
-    };
-}

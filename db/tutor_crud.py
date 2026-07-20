@@ -30,7 +30,6 @@ class TutorCRUD(BaseCRUD[Tutor]):
             password_hash=password_hash,
             first_name=first_name,
             username=username,
-            role="tutor"
         )
         session.add(tutor)
         await session.commit()

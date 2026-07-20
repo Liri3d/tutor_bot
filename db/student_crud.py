@@ -30,7 +30,6 @@ class StudentCRUD(BaseCRUD[Student]):
             first_name=first_name,
             username=username,
             phone=phone,
-            role="student"
         )
         session.add(student)
         await session.commit()

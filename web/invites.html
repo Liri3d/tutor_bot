@@ -32,7 +32,8 @@
         <main class="main">
             <div class="page-header">
                 <h2>🔗 Приглашения</h2>
-                <button @click="generateInvite()" class="btn-primary">🔄 Сгенерировать приглашение</button>
+                <!-- <button @click="generateInvite()" class="btn-primary">🔄 Сгенерировать приглашение</button> -->
+                <button @click="openModal()" class="btn-primary">Создать приглашение</button>
             </div>
 
             <!-- Генерация приглашения -->
@@ -81,9 +82,28 @@
                     <p>Создайте приглашение для нового ученика</p>
                 </div>
             </div>
+
+            <div x-show="modalOpen" class="modal" @click.away="closeModal()">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Создать приглашение</h2>
+                        <button @click="closeModal()" class="close-btn">&times;</button>
+                    </div>
+                    <form @submit.prevent="addInvite()" class="modal-form">
+                        <div class="form-group">
+                            <label>Имя ученика *</label>
+                            <input type="text" x-model="newStudent.name" placeholder="Введите имя" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" @click="closeModal()" class="btn-secondary">Отмена</button>
+                            <button type="submit" class="btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </main>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/invites.js"></script>
 </body>
 </html>
