@@ -1,0 +1,532 @@
+<!-- web/schedule.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Flow - Расписание</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div x-data="scheduleApp()" x-init="init()" class="app">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📚 Tutor Flow</div>
+                <nav class="nav">
+                    <a href="/dashboard.html">Дашборд</a>
+                    <a href="/students.html">Ученики</a>
+                    <a href="/schedule.html" class="active">Расписание</a>
+                    <a href="/lessons.html">Уроки</a>
+                    <a href="/invites.html">Приглашения</a>
+                    <a href="/settings.html">Настройки</a>
+                </nav>
+                <div class="user-menu">
+                    <span x-text="user?.first_name || 'Репетитор'"></span>
+                    <button @click="logout()" class="btn-logout">Выйти</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Контент -->
+        <main class="main">
+            <div class="page-header">
+                <h2>📅 Расписание</h2>
+                <div class="schedule-controls">
+                    <button @click="prevWeek()" class="btn-secondary">◀</button>
+                    <span class="week-label" x-text="currentWeekLabel"></span>
+                    <button @click="nextWeek()" class="btn-secondary">▶</button>
+                    <button @click="today()" class="btn-secondary">Сегодня</button>
+                    <button @click="openModal()" class="btn-primary">➕ Урок</button>
+                </div>
+            </div>
+
+            <!-- Календарь -->
+            <div class="schedule-grid">
+                <template x-for="day in weekDays" :key="day.date">
+                    <div class="schedule-day">
+                        <div class="day-header" :class="{ 'today': day.isToday }">
+                            <div class="day-name" x-text="day.name"></div>
+                            <div class="day-date" x-text="day.date"></div>
+                        </div>
+                        <div class="day-lessons">
+                            <template x-for="lesson in day.lessons" :key="lesson.id">
+                                <div class="lesson-item-small" 
+                                     :class="'status-' + lesson.status"
+                                     @click="editLesson(lesson.id)">
+                                    <div class="lesson-time" x-text="lesson.time"></div>
+                                    <div class="lesson-student" x-text="lesson.student"></div>
+                                    <div class="lesson-subject" x-text="lesson.subject"></div>
+                                </div>
+                            </template>
+                            <div x-show="day.lessons.length === 0" class="empty-lessons">
+                                <span>Нет занятий</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Модальное окно создания урока -->
+            <div x-show="modalOpen" class="modal" @click.away="closeModal()">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 x-text="editingId ? '✏️ Редактировать урок' : '➕ Создать урок'"></h2>
+                        <button @click="closeModal()" class="close-btn">&times;</button>
+                    </div>
+                    <form @submit.prevent="saveLesson()" class="modal-form">
+                        <div class="form-group">
+                            <label>Ученик *</label>
+                            <select x-model="form.student_id" required>
+                                <option value="">Выберите ученика</option>
+                                <template x-for="student in students" :key="student.id">
+                                    <option :value="student.id" x-text="student.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Дата *</label>
+                                <input type="date" x-model="form.date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Время *</label>
+                                <input type="time" x-model="form.time" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Длительность</label>
+                            <select x-model="form.duration">
+                                <option value="30">30 мин</option>
+                                <option value="45">45 мин</option>
+                                <option value="60" selected>60 мин</option>
+                                <option value="90">90 мин</option>
+                                <option value="120">120 мин</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Предмет</label>
+                            <input type="text" x-model="form.subject" placeholder="Например: Алгебра">
+                        </div>
+                        <div class="form-group">
+                            <label>Статус</label>
+                            <select x-model="form.status">
+                                <option value="scheduled">Запланирован</option>
+                                <option value="completed">Завершён</option>
+                                <option value="cancelled">Отменён</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" @click="closeModal()" class="btn-secondary">Отмена</button>
+                            <button type="submit" class="btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function scheduleApp() {
+            return {
+                user: null,
+                students: [],
+                lessons: [],
+                currentDate: new Date(),
+                weekDays: [],
+                modalOpen: false,
+                editingId: null,
+                form: {
+                    student_id: '',
+                    date: '',
+                    time: '',
+                    duration: 60,
+                    subject: '',
+                    status: 'scheduled'
+                },
+
+                init() {
+                    // Проверка токена
+                    const token = localStorage.getItem('tutor_token');
+                    if (!token) {
+                        window.location.href = '/';
+                        return;
+                    }
+
+                    const userData = localStorage.getItem('tutor_user');
+                    if (userData) {
+                        this.user = JSON.parse(userData);
+                    } else {
+                        window.location.href = '/';
+                        return;
+                    }
+
+                    this.loadStudents();
+                    this.loadLessons();
+                    this.generateWeek();
+                },
+
+                generateWeek() {
+                    const week = [];
+                    const start = new Date(this.currentDate);
+                    start.setDate(start.getDate() - start.getDay() + 1); // Понедельник
+                    
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    for (let i = 0; i < 7; i++) {
+                        const date = new Date(start);
+                        date.setDate(date.getDate() + i);
+                        
+                        const dateStr = date.toISOString().split('T')[0];
+                        const isToday = date.toDateString() === today.toDateString();
+                        
+                        week.push({
+                            date: dateStr,
+                            name: this.getDayName(date.getDay()),
+                            dayNumber: date.getDate(),
+                            isToday: isToday,
+                            lessons: this.getLessonsForDate(dateStr)
+                        });
+                    }
+                    
+                    this.weekDays = week;
+                    this.updateWeekLabel();
+                },
+
+                getDayName(dayIndex) {
+                    const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+                    return days[dayIndex];
+                },
+
+                getLessonsForDate(dateStr) {
+                    return this.lessons
+                        .filter(l => l.date === dateStr || l.start_time?.startsWith(dateStr))
+                        .map(l => ({
+                            id: l.id,
+                            time: l.time || (l.start_time ? new Date(l.start_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''),
+                            student: l.student || l.student_name || 'Неизвестный',
+                            subject: l.subject || l.title || 'Занятие',
+                            status: l.status || 'scheduled'
+                        }))
+                        .sort((a, b) => a.time.localeCompare(b.time));
+                },
+
+                updateWeekLabel() {
+                    const start = new Date(this.currentDate);
+                    start.setDate(start.getDate() - start.getDay() + 1);
+                    const end = new Date(start);
+                    end.setDate(end.getDate() + 6);
+                    
+                    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                    this.currentWeekLabel = `${start.toLocaleDateString('ru-RU', options)} — ${end.toLocaleDateString('ru-RU', options)}`;
+                },
+
+                prevWeek() {
+                    this.currentDate.setDate(this.currentDate.getDate() - 7);
+                    this.generateWeek();
+                },
+
+                nextWeek() {
+                    this.currentDate.setDate(this.currentDate.getDate() + 7);
+                    this.generateWeek();
+                },
+
+                today() {
+                    this.currentDate = new Date();
+                    this.generateWeek();
+                },
+
+                async loadStudents() {
+                    try {
+                        // Заглушка - позже заменим на реальный API
+                        const saved = localStorage.getItem('tutorflow_students');
+                        if (saved) {
+                            this.students = JSON.parse(saved);
+                        } else {
+                            this.students = [
+                                { id: 1, name: 'Мария С.' },
+                                { id: 2, name: 'Иван П.' },
+                                { id: 3, name: 'Ольга К.' }
+                            ];
+                        }
+                    } catch (e) {
+                        console.error('Ошибка загрузки учеников:', e);
+                    }
+                },
+
+                async loadLessons() {
+                    try {
+                        const saved = localStorage.getItem('tutorflow_lessons');
+                        if (saved) {
+                            this.lessons = JSON.parse(saved);
+                        } else {
+                            // Демо-данные
+                            this.lessons = [
+                                {
+                                    id: 1,
+                                    title: 'Алгебра',
+                                    student: 'Мария С.',
+                                    student_name: 'Мария С.',
+                                    date: new Date().toISOString().split('T')[0],
+                                    time: '14:00',
+                                    duration: 60,
+                                    status: 'scheduled'
+                                },
+                                {
+                                    id: 2,
+                                    title: 'Геометрия',
+                                    student: 'Иван П.',
+                                    student_name: 'Иван П.',
+                                    date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                                    time: '16:30',
+                                    duration: 90,
+                                    status: 'scheduled'
+                                }
+                            ];
+                            localStorage.setItem('tutorflow_lessons', JSON.stringify(this.lessons));
+                        }
+                        this.generateWeek();
+                    } catch (e) {
+                        console.error('Ошибка загрузки уроков:', e);
+                    }
+                },
+
+                openModal() {
+                    this.editingId = null;
+                    this.form = {
+                        student_id: '',
+                        date: new Date().toISOString().split('T')[0],
+                        time: '10:00',
+                        duration: 60,
+                        subject: '',
+                        status: 'scheduled'
+                    };
+                    this.modalOpen = true;
+                },
+
+                closeModal() {
+                    this.modalOpen = false;
+                    this.editingId = null;
+                },
+
+                editLesson(id) {
+                    const lesson = this.lessons.find(l => l.id === id);
+                    if (lesson) {
+                        this.editingId = id;
+                        this.form = {
+                            student_id: lesson.student_id || 1,
+                            date: lesson.date || lesson.start_time?.split('T')[0] || '',
+                            time: lesson.time || lesson.start_time?.split('T')[1]?.substring(0, 5) || '',
+                            duration: lesson.duration || lesson.duration_minutes || 60,
+                            subject: lesson.subject || lesson.title || '',
+                            status: lesson.status || 'scheduled'
+                        };
+                        this.modalOpen = true;
+                    }
+                },
+
+                async saveLesson() {
+                    if (!this.form.student_id || !this.form.date || !this.form.time) {
+                        alert('Заполните все обязательные поля');
+                        return;
+                    }
+
+                    const student = this.students.find(s => s.id === this.form.student_id);
+                    const lesson = {
+                        id: this.editingId || Date.now(),
+                        title: this.form.subject || 'Занятие',
+                        subject: this.form.subject || 'Занятие',
+                        student: student?.name || 'Неизвестный',
+                        student_name: student?.name || 'Неизвестный',
+                        student_id: this.form.student_id,
+                        date: this.form.date,
+                        time: this.form.time,
+                        duration: this.form.duration,
+                        duration_minutes: this.form.duration,
+                        status: this.form.status,
+                        start_time: `${this.form.date}T${this.form.time}:00`
+                    };
+
+                    if (this.editingId) {
+                        const index = this.lessons.findIndex(l => l.id === this.editingId);
+                        if (index !== -1) {
+                            this.lessons[index] = { ...this.lessons[index], ...lesson };
+                        }
+                    } else {
+                        this.lessons.push(lesson);
+                    }
+
+                    localStorage.setItem('tutorflow_lessons', JSON.stringify(this.lessons));
+                    this.closeModal();
+                    this.generateWeek();
+                },
+
+                logout() {
+                    localStorage.removeItem('tutor_token');
+                    localStorage.removeItem('tutor_user');
+                    window.location.href = '/';
+                }
+            };
+        }
+    </script>
+
+    <style>
+        /* Стили для расписания */
+        .schedule-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .schedule-controls .week-label {
+            font-weight: 600;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .schedule-day {
+            min-height: 300px;
+            border: 1px solid #F1F5F9;
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .day-header {
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            background: #F8FAFC;
+        }
+
+        .day-header.today {
+            background: #3B82F6;
+            color: white;
+        }
+
+        .day-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .day-date {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .day-lessons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .lesson-item-small {
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            background: #EFF6FF;
+            border-left: 3px solid #3B82F6;
+        }
+
+        .lesson-item-small:hover {
+            background: #DBEAFE;
+        }
+
+        .lesson-item-small.status-completed {
+            background: #D1FAE5;
+            border-left-color: #10B981;
+        }
+
+        .lesson-item-small.status-cancelled {
+            background: #FEE2E2;
+            border-left-color: #EF4444;
+        }
+
+        .lesson-item-small .lesson-time {
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+
+        .lesson-item-small .lesson-student {
+            font-weight: 500;
+        }
+
+        .lesson-item-small .lesson-subject {
+            color: #64748B;
+            font-size: 0.65rem;
+        }
+
+        .empty-lessons {
+            text-align: center;
+            color: #CBD5E1;
+            font-size: 0.75rem;
+            padding: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .schedule-grid {
+                grid-template-columns: repeat(7, 1fr);
+                font-size: 0.7rem;
+                padding: 0.5rem;
+            }
+
+            .schedule-day {
+                min-height: 200px;
+                padding: 0.3rem;
+            }
+
+            .day-date {
+                font-size: 1rem;
+            }
+
+            .lesson-item-small {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.3rem;
+            }
+
+            .schedule-controls .week-label {
+                min-width: 100px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .schedule-grid {
+                grid-template-columns: repeat(7, 1fr);
+                font-size: 0.6rem;
+            }
+
+            .schedule-day {
+                min-height: 150px;
+            }
+
+            .day-name {
+                font-size: 0.6rem;
+            }
+
+            .day-date {
+                font-size: 0.8rem;
+            }
+
+            .lesson-item-small {
+                font-size: 0.5rem;
+            }
+        }
+    </style>
+</body>
+</html>

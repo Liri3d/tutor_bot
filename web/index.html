@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tutor Flow - Вход</title>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <div x-data="authApp()" x-init="init()" class="container">
+      <div class="auth-card">
+        <div class="logo">📚 Tutor Flow</div>
+        <h1>Вход в систему</h1>
+
+        <!-- Статус -->
+        <div x-show="message" class="message" x-text="message"></div>
+
+        <!-- Форма входа -->
+        <form @submit.prevent="login()" class="auth-form">
+          <div class="form-group">
+            <label>Логин</label>
+            <input
+              type="text"
+              x-model="loginData.username"
+              placeholder="Введите логин"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Пароль</label>
+            <input
+              type="password"
+              x-model="loginData.password"
+              placeholder="Введите пароль"
+              required
+            />
+          </div>
+
+          <div x-show="error" class="error" x-text="error"></div>
+
+          <button type="submit" class="btn-primary" :disabled="loading">
+            <span x-text="loading ? 'Вход...' : 'Войти'"></span>
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          <span>Нет аккаунта?</span>
+          <a href="/static/register.html">Зарегистрироваться</a>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

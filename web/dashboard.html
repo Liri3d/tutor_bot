@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Flow - Дашборд</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div x-data="dashboardApp()" x-init="init()" class="app">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📚 Tutor Flow</div>
+                <nav class="nav">
+                    <a href="/static/dashboard.html" class="active">Дашборд</a>
+                    <a href="/static/students.html">Ученики</a>
+                    <a href="/static/schedule.html">Расписание</a>
+                    <a href="/static/lessons.html">Уроки</a>
+                    <a href="/static/invites.html">Приглашения</a>
+                    <a href="/static/settings.html">Настройки</a>
+                </nav>
+                <div class="user-menu">
+                    <span x-text="user?.first_name || 'Репетитор'"></span>
+                    <button @click="logout()" class="btn-logout">Выйти</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Контент -->
+        <main class="main">
+            <h2 class="greeting" x-text="'Добро пожаловать, ' + (user?.login) + '! 👋'"></h2>
+
+            <!-- Метрики -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">👥</div>
+                    <div>
+                        <div class="metric-label">Всего учеников</div>
+                        <div class="metric-value" x-text="stats.total_students || 0"></div>
+                    </div>
+                </div>
+             
+                <div class="metric-card">
+                    <div class="metric-icon">📅</div>
+                    <div>
+                        <div class="metric-label">Занятий на неделе</div>
+                        <div class="metric-value" x-text="stats.lessons_this_week || 0"></div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon">📊</div>
+                    <div>
+                        <div class="metric-label">Занятий за месяц</div>
+                        <div class="metric-value" x-text="stats.lessons_this_month || 0"></div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon">✅</div>
+                    <div>
+                        <div class="metric-label">Активных учеников</div>
+                        <div class="metric-value" x-text="stats.active_students || 0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="actions-grid">
+                <a href="/static/students.html" class="action-card">
+                    <span class="action-icon">👥</span>
+                    Мои ученики
+                </a>
+                <a href="/static/schedule.html" class="action-card">
+                    <span class="action-icon">📅</span>
+                    Расписание
+                </a>
+                <a href="/static/lessons.html" class="action-card">
+                    <span class="action-icon">➕</span>
+                    Создать урок
+                </a>
+                <a href="/static/invites.html" class="action-card">
+                    <span class="action-icon">🔗</span>
+                    Пригласить ученика
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

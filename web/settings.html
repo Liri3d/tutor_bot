@@ -1,0 +1,465 @@
+<!-- web/settings.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Flow - Настройки</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div x-data="settingsApp()" x-init="init()" class="app">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📚 Tutor Flow</div>
+                <nav class="nav">
+                    <a href="/dashboard.html">Дашборд</a>
+                    <a href="/students.html">Ученики</a>
+                    <a href="/schedule.html">Расписание</a>
+                    <a href="/lessons.html">Уроки</a>
+                    <a href="/invites.html">Приглашения</a>
+                    <a href="/settings.html" class="active">Настройки</a>
+                </nav>
+                <div class="user-menu">
+                    <span x-text="user?.first_name || 'Репетитор'"></span>
+                    <button @click="logout()" class="btn-logout">Выйти</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Контент -->
+        <main class="main">
+            <div class="page-header">
+                <h2>⚙️ Настройки</h2>
+            </div>
+
+            <div class="settings-container">
+                <!-- Уведомления -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-bell"></i> Уведомления</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Напоминать за</span>
+                            <span class="setting-desc">За сколько минут до занятия отправлять напоминание</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" x-model="settings.reminder_minutes" min="5" max="120" step="5">
+                            <span>минут</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Уведомлять об отменах</span>
+                            <span class="setting-desc">Получать уведомления, когда ученик отменяет занятие</span>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle">
+                                <input type="checkbox" x-model="settings.notify_cancellations">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Уведомлять о новых учениках</span>
+                            <span class="setting-desc">Получать уведомления, когда ученик регистрируется по вашей ссылке</span>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle">
+                                <input type="checkbox" x-model="settings.notify_new_students" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Расписание -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-clock"></i> Расписание</h3>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Часовой пояс</span>
+                            <span class="setting-desc">Ваш часовой пояс для корректного отображения времени</span>
+                        </div>
+                        <div class="setting-control">
+                            <select x-model="settings.timezone">
+                                <option value="UTC+3">Москва (UTC+3)</option>
+                                <option value="UTC+4">Самара (UTC+4)</option>
+                                <option value="UTC+5">Екатеринбург (UTC+5)</option>
+                                <option value="UTC+6">Омск (UTC+6)</option>
+                                <option value="UTC+7">Красноярск (UTC+7)</option>
+                                <option value="UTC+8">Иркутск (UTC+8)</option>
+                                <option value="UTC+9">Якутск (UTC+9)</option>
+                                <option value="UTC+10">Владивосток (UTC+10)</option>
+                                <option value="UTC+11">Магадан (UTC+11)</option>
+                                <option value="UTC+12">Камчатка (UTC+12)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Бесплатная отмена</span>
+                            <span class="setting-desc">За сколько часов до занятия можно отменить без списания</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" x-model="settings.cancellation_hours" min="1" max="24">
+                            <span>часов</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Длительность урока по умолчанию</span>
+                            <span class="setting-desc">Стандартная длительность при создании нового урока</span>
+                        </div>
+                        <div class="setting-control">
+                            <select x-model="settings.default_duration">
+                                <option value="30">30 минут</option>
+                                <option value="45">45 минут</option>
+                                <option value="60" selected>60 минут</option>
+                                <option value="90">90 минут</option>
+                                <option value="120">120 минут</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Внешний вид -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-palette"></i> Внешний вид</h3>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Тема</span>
+                            <span class="setting-desc">Цветовая схема интерфейса</span>
+                        </div>
+                        <div class="setting-control">
+                            <select x-model="settings.theme" @change="applyTheme()">
+                                <option value="light">Светлая</option>
+                                <option value="dark">Тёмная</option>
+                                <option value="system">Системная</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Данные -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-database"></i> Данные</h3>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Экспорт данных</span>
+                            <span class="setting-desc">Выгрузить все данные в JSON</span>
+                        </div>
+                        <div class="setting-control">
+                            <button @click="exportData()" class="btn-secondary"><i class="fas fa-download"></i> Экспорт</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label" style="color: #EF4444;">Очистить данные</span>
+                            <span class="setting-desc" style="color: #EF4444;">Удалить все данные и начать заново</span>
+                        </div>
+                        <div class="setting-control">
+                            <button @click="clearData()" class="btn-danger"><i class="fas fa-trash"></i> Очистить</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Кнопка сохранения -->
+                <div class="settings-actions">
+                    <button @click="saveSettings()" class="btn-primary">
+                        <i class="fas fa-save"></i> Сохранить настройки
+                    </button>
+                    <span x-show="saveMessage" class="success-message" x-text="saveMessage"></span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function settingsApp() {
+            return {
+                user: null,
+                settings: {
+                    reminder_minutes: 30,
+                    notify_cancellations: true,
+                    notify_new_students: true,
+                    timezone: 'UTC+3',
+                    cancellation_hours: 3,
+                    default_duration: 60,
+                    theme: 'light'
+                },
+                saveMessage: '',
+
+                init() {
+                    // Проверка токена
+                    const token = localStorage.getItem('tutor_token');
+                    if (!token) {
+                        window.location.href = '/';
+                        return;
+                    }
+
+                    const userData = localStorage.getItem('tutor_user');
+                    if (userData) {
+                        this.user = JSON.parse(userData);
+                    } else {
+                        window.location.href = '/';
+                        return;
+                    }
+
+                    // Загрузка настроек из localStorage
+                    const savedSettings = localStorage.getItem('tutor_settings');
+                    if (savedSettings) {
+                        try {
+                            const parsed = JSON.parse(savedSettings);
+                            this.settings = { ...this.settings, ...parsed };
+                            this.applyTheme();
+                        } catch (e) {
+                            console.error('Ошибка загрузки настроек:', e);
+                        }
+                    }
+                },
+
+                saveSettings() {
+                    try {
+                        localStorage.setItem('tutor_settings', JSON.stringify(this.settings));
+                        this.saveMessage = '✅ Настройки сохранены!';
+                        setTimeout(() => { this.saveMessage = ''; }, 3000);
+                    } catch (e) {
+                        console.error('Ошибка сохранения настроек:', e);
+                        this.saveMessage = '❌ Ошибка сохранения';
+                    }
+                },
+
+                applyTheme() {
+                    const theme = this.settings.theme;
+                    if (theme === 'dark') {
+                        document.documentElement.style.setProperty('--bg-color', '#1a1a2e');
+                        document.documentElement.style.setProperty('--text-color', '#ffffff');
+                        document.documentElement.style.setProperty('--card-bg', '#16213e');
+                    } else if (theme === 'light') {
+                        document.documentElement.style.setProperty('--bg-color', '#F8FAFC');
+                        document.documentElement.style.setProperty('--text-color', '#1E293B');
+                        document.documentElement.style.setProperty('--card-bg', '#FFFFFF');
+                    } else {
+                        // system - используем системные настройки
+                        const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        if (darkMode) {
+                            document.documentElement.style.setProperty('--bg-color', '#1a1a2e');
+                            document.documentElement.style.setProperty('--text-color', '#ffffff');
+                            document.documentElement.style.setProperty('--card-bg', '#16213e');
+                        } else {
+                            document.documentElement.style.setProperty('--bg-color', '#F8FAFC');
+                            document.documentElement.style.setProperty('--text-color', '#1E293B');
+                            document.documentElement.style.setProperty('--card-bg', '#FFFFFF');
+                        }
+                    }
+                },
+
+                exportData() {
+                    const data = {
+                        user: this.user,
+                        settings: this.settings,
+                        students: JSON.parse(localStorage.getItem('tutorflow_students') || '[]'),
+                        lessons: JSON.parse(localStorage.getItem('tutorflow_lessons') || '[]'),
+                        exported_at: new Date().toISOString()
+                    };
+                    
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `tutorflow_export_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                },
+
+                clearData() {
+                    if (confirm('Вы уверены, что хотите очистить все данные? Это действие нельзя отменить!')) {
+                        if (confirm('Все данные будут удалены. Продолжить?')) {
+                            localStorage.removeItem('tutorflow_students');
+                            localStorage.removeItem('tutorflow_lessons');
+                            localStorage.removeItem('tutorflow_metrics');
+                            localStorage.removeItem('tutor_settings');
+                            localStorage.removeItem('tutor_token');
+                            localStorage.removeItem('tutor_user');
+                            window.location.href = '/';
+                        }
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('tutor_token');
+                    localStorage.removeItem('tutor_user');
+                    window.location.href = '/';
+                }
+            };
+        }
+    </script>
+
+    <style>
+        /* Стили для настроек */
+        .settings-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .settings-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .settings-section h3 {
+            font-size: 1rem;
+            margin-bottom: 1.2rem;
+            color: #1E293B;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-label {
+            font-weight: 500;
+            display: block;
+        }
+
+        .setting-desc {
+            font-size: 0.85rem;
+            color: #64748B;
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        .setting-control input[type="number"] {
+            width: 80px;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .setting-control select {
+            min-width: 180px;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            cursor: pointer;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #CBD5E1;
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: #3B82F6;
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        .settings-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+
+        .success-message {
+            color: #10B981;
+            font-weight: 500;
+        }
+
+        /* CSS переменные для тем */
+        :root {
+            --bg-color: #F8FAFC;
+            --text-color: #1E293B;
+            --card-bg: #FFFFFF;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .settings-section {
+            background: var(--card-bg);
+        }
+    </style>
+</body>
+</html>
