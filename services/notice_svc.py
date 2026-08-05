@@ -6,7 +6,6 @@ from typing import Optional
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from db.models import User
 
 
 class NotificationService:

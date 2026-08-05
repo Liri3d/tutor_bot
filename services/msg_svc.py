@@ -2,27 +2,28 @@
 
 from typing import Tuple, Optional, List
 from aiogram.types import InlineKeyboardMarkup
-from db.models import User, Invite
+from db.models import Tutor, Student, Invite
 from keyboards import tutor_main_menu, student_main_menu
+
 
 class MessageService:
     """Сервис для формирования сообщений и меню"""
 
     @staticmethod
-    async def get_welcome_message(user: User) -> Tuple[str, InlineKeyboardMarkup]:
+    async def get_welcome_message(user: Student | Tutor) -> Tuple[str, InlineKeyboardMarkup]:
         """
         Получить приветственное сообщение и меню для пользователя.
         
         Args:
-            user: Объект пользователя
+            user: Объект пользователя (Student или Tutor)
         
         Returns:
             tuple: (текст сообщения, клавиатура)
         """
-        if user.role == "tutor":
+        if hasattr(user, 'login'):  # это Tutor
             text = f"👋 С возвращением, {user.first_name or 'репетитор'}!\n\nВыберите действие:"
             keyboard = tutor_main_menu()
-        else:
+        else:  # это Student
             text = f"👋 С возвращением, {user.first_name or 'ученик'}!\n\nВыберите действие:"
             keyboard = student_main_menu()
         
@@ -30,7 +31,7 @@ class MessageService:
 
     @staticmethod
     async def get_registration_success_message(
-        user: User,
+        user: Student,
         role: str
     ) -> str:
         """
@@ -51,55 +52,21 @@ class MessageService:
         else:
             return (
                 f"✅ Вы зарегистрированы как ученик!\n\n"
-                f"👋 Добро пожаловать, {user.first_name or 'ученик'}!\n\n"
+                f"👋 Добро пожаловать, {user.first_name or 'ученик'}!"
             )
-        
-    @staticmethod
-    async def get_change_role_success_message(
-        user: User
-    ) -> Tuple[str, Optional[InlineKeyboardMarkup], Optional[str]]:
-        """
-        Получить сообщение об успешной смене роли.
-        
-        Args:
-            user: Объект пользователя
-            next_state: Следующее состояние (если нужно)
-        
-        Returns:
-            tuple: (текст сообщения, клавиатура, следующее состояние)
-        """
-        if user.role == "tutor":
-            text = f"✅ Вы сменили роль на репетитора!\n\nВыберите действие:"
-            keyboard = tutor_main_menu()
-            next_state = "waiting_for_invite"
-        else:
-            text = f"✅ Вы сменили роль на ученика!\n\nТеперь перейдите по инвайт-ссылке от вашего репетитора:"
-            keyboard = None
-            next_state = "waiting_for_invite"
-        
-        return text, keyboard, next_state
-        
-    @staticmethod
-    async def get_change_role_confirm_message(
-        user: User       
-    ) -> str:
-        new_role = "ученика" if user.role == "tutor" else "репетитора"
-
-        return (
-            f"⚠️ Вы уверены, что хотите сменить роль на {new_role}?\n\n"
-            f"При смене роли вы потеряете доступ к данным, связанным со старой ролью."
-        )  
-
+    
     @staticmethod
     async def get_connect_success_message(
-        tutor: User,
+        tutor: Tutor,
     ) -> str:
+        """Сообщение об успешном подключении к репетитору"""
         if tutor:
             return (
                 f"✅ Вы успешно подключились к репетитору!\n"
                 f"👤 {tutor.first_name or 'Репетитор'}\n\n"
                 "Теперь вы можете просматривать свои занятия и баланс."
             )
+        return "❌ Репетитор не найден"
     
     @staticmethod
     async def get_invite_instructions() -> str:
@@ -128,8 +95,6 @@ class MessageService:
             "Я помогу вам управлять своим расписанием.\n\n"
             "Вы ученик или репетитор?"
         )
-    
-
 
     @staticmethod
     async def get_error_message(
@@ -195,20 +160,16 @@ class MessageService:
             "already_exists": "❌ {item} уже существует.",
         }
         
-        # Получаем сообщение
         message = errors.get(error_type, errors["unknown_error"])
         
-        # Подставляем параметры
         if item is not None:
             message = message.replace("{item}", item)
         
-        # Подставляем дополнительные параметры
         for key, value in kwargs.items():
             if isinstance(value, str):
                 message = message.replace(f"{{{key}}}", value)
         
         return message
-
 
     @staticmethod
     async def get_invite_prompt() -> str:
@@ -240,7 +201,6 @@ class MessageService:
         Returns:
             str: Отформатированное сообщение
         """
-        # Основная информация
         text = (
             f"✅ **Приглашение создано!**\n\n"
             f"👤 Ученик: {invite.student_name}\n"
@@ -248,13 +208,11 @@ class MessageService:
             f"📅 Действительно до: {invite.expires_at.strftime('%d.%m.%Y %H:%M')}\n\n"
         )
         
-        # Ссылка для приглашения
         text += (
             f"Отправьте ученику эту ссылку:\n"
             f"`https://t.me/{bot_username}?start=invite_{invite.code}`"
         )
         
-        # Дополнительная информация
         if include_usage_info:
             text += (
                 f"\n\nℹ️ **Информация:**\n"
@@ -265,32 +223,34 @@ class MessageService:
         return text
 
     @staticmethod
-    async def get_settings_message(user: User) -> Tuple[str, InlineKeyboardMarkup]:
+    async def get_settings_message(user: Student | Tutor) -> str:
         """
-        Получить сообщение и клавиатуру для меню настроек.
+        Получить сообщение для меню настроек.
         
         Args:
-            user: Объект пользователя
+            user: Объект пользователя (Student или Tutor)
         
         Returns:
-            tuple: (текст сообщения, клавиатура)
+            str: Текст сообщения
         """
-        text = (
+        # Определяем роль
+        if hasattr(user, 'login'):
+            role_display = "репетитор"
+            registered_at = user.registered_at if hasattr(user, 'registered_at') else "неизвестно"
+        else:
+            role_display = "ученик"
+            registered_at = user.registered_at if hasattr(user, 'registered_at') else "неизвестно"
+        
+        return (
             f"⚙️ **Настройки**\n\n"
-            f"👤 Ваша роль: **{user.role}**\n"
-            f"📅 Зарегистрирован: {user.registered_at.strftime('%d.%m.%Y')}\n\n"
+            f"👤 Ваша роль: **{role_display}**\n"
+            f"📅 Зарегистрирован: {registered_at.strftime('%d.%m.%Y') if hasattr(registered_at, 'strftime') else registered_at}\n\n"
             f"Здесь вы можете изменить свои настройки."
         )
-        
-        return text
-    
-
-
-
 
     @staticmethod
     async def format_student_list(
-        students: List[User],
+        students: List[Student],
         show_username: bool = True,
         show_registered: bool = False
     ) -> str:
@@ -311,16 +271,13 @@ class MessageService:
         text = f"👤 **Ваши ученики**\n\nВсего: {len(students)}\n\n"
         
         for idx, student in enumerate(students, 1):
-            # Имя
             name = student.first_name or "Без имени"
             text += f"{idx}. {name}"
             
-            # Username
             if show_username and student.username:
                 text += f" (@{student.username})"
             
-            # Дата регистрации
-            if show_registered:
+            if show_registered and hasattr(student, 'registered_at'):
                 text += f"\n   📅 Зарегистрирован: {student.registered_at.strftime('%d.%m.%Y')}"
             
             text += "\n"
@@ -329,7 +286,7 @@ class MessageService:
 
     @staticmethod
     async def format_student_detail(
-        student: User,
+        student: Student,
         show_telegram_id: bool = False,
         show_settings: bool = False
     ) -> str:
@@ -346,7 +303,6 @@ class MessageService:
         """
         text = "📋 **Информация об ученике**\n\n"
         
-        # Основная информация
         text += f"👤 Имя: {student.first_name or 'Не указано'}\n"
         
         if student.username:
@@ -354,39 +310,37 @@ class MessageService:
         else:
             text += "🔗 Username: Нет\n"
         
-        text += f"📅 Зарегистрирован: {student.registered_at.strftime('%d.%m.%Y %H:%M')}\n"
+        if hasattr(student, 'registered_at'):
+            text += f"📅 Зарегистрирован: {student.registered_at.strftime('%d.%m.%Y %H:%M')}\n"
         
-        # Дополнительная информация
         if show_telegram_id:
             text += f"🆔 Telegram ID: {student.telegram_id}\n"
         
-        # Роль
-        role_display = "👨‍🏫 Репетитор" if student.role == "tutor" else "👨‍🎓 Ученик"
-        text += f"📌 Роль: {role_display}\n"
-        
-        if show_settings and hasattr(student, 'settings') and student.settings:
-            text += f"\n⚙️ **Настройки:**\n"
-            for key, value in student.settings.items():
-                text += f"• {key}: {value}\n"
+        # ✅ ИСПРАВЛЕНО: у Student нет role, всегда ученик
+        text += "📌 Роль: 👨‍🎓 Ученик\n"
         
         # Заглушка для будущих функций
         text += "\n📌 Здесь будут занятия и управление учеником."
         
         return text
-    
-
-
-
 
     @staticmethod
-    async def get_main_mune_message(
-        user: User,
+    async def get_main_menu_message(
+        user: Student | Tutor,
     ) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
-       
-        if user.role == "tutor":
+        """
+        Получить главное меню для пользователя.
+        
+        Args:
+            user: Объект пользователя (Student или Tutor)
+        
+        Returns:
+            tuple: (текст сообщения, клавиатура)
+        """
+        if hasattr(user, 'login'):  # это Tutor
             text = "👋 Главное меню репетитора:"
             keyboard = tutor_main_menu()
-        else:
+        else:  # это Student
             text = "👋 Главное меню ученика:"
             keyboard = student_main_menu()
 

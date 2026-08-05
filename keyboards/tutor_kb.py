@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from db.models import Student
 
 def tutor_main_menu() -> InlineKeyboardMarkup:
     """Главное меню репетитора"""
@@ -13,7 +14,7 @@ def tutor_main_menu() -> InlineKeyboardMarkup:
         ]
     )
 
-def build_students_keyboard(students: list, tutor_id: int) -> InlineKeyboardMarkup:
+def build_students_keyboard(students: list[Student], tutor_id: int) -> InlineKeyboardMarkup:
     """
     Создаёт клавиатуру со списком учеников.
     Каждая кнопка — это ученик, callback_data содержит его ID.

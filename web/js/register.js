@@ -25,10 +25,10 @@ function registerApp() {
 
                 async register() {
                     // Валидация
-                    if (!this.form.first_name || this.form.first_name.length < 2) {
-                        this.error = 'Имя должно содержать минимум 2 символа';
-                        return;
-                    }
+                    // if (!this.form.first_name || this.form.first_name.length < 2) {
+                    //     this.error = 'Имя должно содержать минимум 2 символа';
+                    //     return;
+                    // }
 
                     if (!this.form.login || this.form.login.length < 3) {
                         this.error = 'Логин должен содержать минимум 3 символа';
