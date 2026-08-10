@@ -20,16 +20,22 @@ class StudentCRUD(BaseCRUD[Student]):
     async def create(
         self,
         session: AsyncSession,
-        telegram_id: int,
-        first_name: str,
+        student_name: str,
+        telegram_id: Optional[str] = None,
         username: Optional[str] = None,
-        phone: Optional[str] = None
+        first_name: Optional[str] = None,
+        gender: Optional[str] = None,
+        age: Optional[int] = None,
+        subject: Optional[str] = None,
     ) -> Student:
         student = Student(
             telegram_id=telegram_id,
-            first_name=first_name,
             username=username,
-            phone=phone,
+            first_name=first_name,
+            student_name=student_name,
+            gender=gender,
+            age=age,
+            subject=subject,
         )
         session.add(student)
         await session.commit()

@@ -22,7 +22,7 @@
                     <a href="/static/settings.html">Настройки</a>
                 </nav>
                 <div class="user-menu">
-                    <span x-text="user?.first_name || 'Репетитор'"></span>
+                    <span x-text="user?.name || 'Репетитор'"></span>
                     <button @click="logout()" class="btn-logout">Выйти</button>
                 </div>
             </div>

@@ -30,14 +30,16 @@ async def run_bot():
     await dp.start_polling(bot)
 
 async def run_api():
-    """Запуск FastAPI"""
-    env = ENVIRONMENT
-    host = "0.0.0.0" if env == "production" else "localhost"
-    port = int(os.getenv("PORT", 80))
+    # """Запуск FastAPI"""
+    # env = ENVIRONMENT
+    # host = "0.0.0.0" if env == "production" else "localhost"
+    # port = int(os.getenv("PORT", 80))
 
-    config = uvicorn.Config(app, host=host, port=port, loop="asyncio")
-    server = uvicorn.Server(config)
-    await server.serve()
+    # config = uvicorn.Config(app, host=host, port=port, loop="asyncio")
+    # server = uvicorn.Server(config)
+    # await server.serve()
+
+    pass
     
 async def main():
     await SessionService.init_db()

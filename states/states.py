@@ -6,3 +6,6 @@ class RegisterStates(StatesGroup):
 
 class TutorStates(StatesGroup):
     waiting_for_student_name = State()
+    waiting_for_student_gender = State()
+    waiting_for_student_age = State()
+    waiting_for_student_subject = State()

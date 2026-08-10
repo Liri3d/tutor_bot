@@ -1,6 +1,6 @@
 from .stud_svc import StudentService
 from .invite_svc import InviteService
-from .relp_svc import RelationshipService
+from .link_svc import LinkService
 from .notice_svc import NotificationService
 from .msg_svc import MessageService
 from .session_svc import SessionService

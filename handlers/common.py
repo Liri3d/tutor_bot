@@ -20,7 +20,6 @@ from services import (
     MessageService,
     AuthService,
     InviteService,
-    RelationshipService
 )
 from db import student_crud, tutor_crud
 
@@ -59,7 +58,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         if invite_code:
             try:
                 # Регистрируем ученика по инвайту
-                student, relationship, tutor = await StudentService.register_by_invite(
+                student, tutor = await StudentService.register_by_invite(
                     session=session,
                     telegram_id=message.from_user.id,
                     username=message.from_user.username,
@@ -115,12 +114,41 @@ async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь выбрал роль репетитора"""
     await callback.answer() 
     
-    # Для репетитора нужна регистрация через веб-интерфейс
-    # В боте просто отправляем ссылку на регистрацию
+    async for session in SessionService.get_session():
+        # Проверяем, не зарегистрирован ли уже пользователь
+        existing = await tutor_crud.get_by_telegram_id(session, callback.from_user.id)
+        if existing:
+            await callback.message.edit_text(
+                "✅ Вы уже зарегистрированы как репетитор!"
+            )
+            await callback.message.answer(
+                "Выберите действие:",
+                reply_markup=tutor_main_menu()
+            )
+            await state.clear()
+            return
+        
+        # Создаём репетитора из данных Telegram
+        tutor = await tutor_crud.create(
+            session=session,
+            telegram_id=callback.from_user.id,
+            username=callback.from_user.username,
+            first_name=callback.from_user.first_name or "Репетитор"
+        )
+
     await callback.message.edit_text(
-        "👨‍🏫 Для регистрации как репетитор, пожалуйста, перейдите по ссылке:\n\n"
-        "🔗 http://localhost:8000/register.html\n\n"
-        "После регистрации войдите в систему и используйте бота для управления учениками."
+        f"✅ **Регистрация успешна!**\n\n"
+        f"👤 Вы зарегистрированы как репетитор:\n"
+        f"Имя: {tutor.first_name}\n"
+        f"{'Username: @' + tutor.username if tutor.first_name else ''}\n"
+        f"🆔 Telegram ID: {tutor.telegram_id}\n\n"
+        f"Теперь вы можете управлять своими учениками через бота!",
+        parse_mode="Markdown"
+    )
+    
+    await callback.message.answer(
+        "Выберите действие:",
+        reply_markup=tutor_main_menu()
     )
     await state.clear()
 
@@ -158,44 +186,44 @@ async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(RegisterStates.waiting_for_invite)
 
 
-@common_router.message(RegisterStates.waiting_for_invite)
-async def handle_invite_input(message: types.Message, state: FSMContext):
-    """Ученик переходит по ссылке-приглашению"""
-    invite_code = message.text.strip()
+# @common_router.message(RegisterStates.waiting_for_invite)
+# async def handle_invite_input(message: types.Message, state: FSMContext):
+#     """Ученик переходит по ссылке-приглашению"""
+#     invite_code = message.text.strip()
 
-    async for session in SessionService.get_session():
-        try:
-            student, relationship, tutor = await StudentService.register_by_invite(
-                session=session,
-                telegram_id=message.from_user.id,
-                username=message.from_user.username,
-                first_name=message.from_user.first_name,
-                invite_code=invite_code
-            )
+#     async for session in SessionService.get_session():
+#         try:
+#             student, tutor = await StudentService.register_by_invite(
+#                 session=session,
+#                 telegram_id=message.from_user.id,
+#                 username=message.from_user.username,
+#                 first_name=message.from_user.first_name,
+#                 invite_code=invite_code
+#             )
         
-            success_text = await MessageService.get_connect_success_message(tutor)
+#             success_text = await MessageService.get_connect_success_message(tutor)
         
-            await message.answer(
-                success_text,
-                parse_mode="Markdown"
-            )
+#             await message.answer(
+#                 success_text,
+#                 parse_mode="Markdown"
+#             )
 
-            await NotificationService.notify_tutor_about_new_student(
-                bot=message.bot,
-                tutor_telegram_id=tutor.telegram_id,
-                student_first_name=student.first_name or "Без имени",
-                student_username=student.username
-            )
+#             await NotificationService.notify_tutor_about_new_student(
+#                 bot=message.bot,
+#                 tutor_telegram_id=tutor.telegram_id,
+#                 student_first_name=student.first_name or "Без имени",
+#                 student_username=student.username
+#             )
 
-            await message.answer(
-                "Выберите действие:",
-                reply_markup=student_main_menu()
-            )
+#             await message.answer(
+#                 "Выберите действие:",
+#                 reply_markup=student_main_menu()
+#             )
         
-            await state.clear()
+#             await state.clear()
 
-        except ValueError as e:
-            await message.answer(f"❌ {str(e)}")
+#         except ValueError as e:
+#             await message.answer(f"❌ {str(e)}")
 
 
 @common_router.callback_query(lambda c: c.data == "back_to_main")
@@ -204,53 +232,71 @@ async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     
     async for session in SessionService.get_session():
-        student = await student_crud.get_by_telegram_id(session, callback.from_user.id)
-        
-        if student:
-            text, keyboard = await MessageService.get_main_menu_message(student)
-            await callback.message.edit_text(text, reply_markup=keyboard)
-        else:
+        tutor = await tutor_crud.get_by_telegram_id(session, callback.from_user.id)
+        if tutor:
+            # Если репетитор - показываем меню репетитора
             await callback.message.edit_text(
-                "❌ Пользователь не найден. Нажмите /start для регистрации."
+                "👋 Главное меню репетитора:\n\n"
+                "Выберите действие:",
+                reply_markup=tutor_main_menu()
             )
-
-
-@common_router.callback_query(lambda c: c.data == "settings_menu")
-async def handle_settings_menu(callback: types.CallbackQuery, state: FSMContext):
-    """Открыть меню настроек"""
-    await callback.answer()
-    
-    async for session in SessionService.get_session():
-        student = await student_crud.get_by_telegram_id(session, callback.from_user.id)
-        
-        if not student:
-            await callback.message.edit_text(
-                await MessageService.get_error_message("user_not_found")
-            )
+            await state.clear()
             return
         
-        settings_text = await MessageService.get_settings_message(student)
+        student = await student_crud.get_by_telegram_id(session, callback.from_user.id)
+        if student:
+            # Если ученик - показываем меню ученика
+            await callback.message.edit_text(
+                "👋 Главное меню ученика:\n\n"
+                "Выберите действие:",
+                reply_markup=student_main_menu()
+            )
+            await state.clear()
+            return
         
+        # Если пользователь не найден
         await callback.message.edit_text(
-            text=settings_text,
-            reply_markup=settings_menu("student"),  # только ученик
-            parse_mode="Markdown"
+            "❌ Пользователь не найден.\n"
+            "Нажмите /start для регистрации."
         )
 
 
-# ===== УДАЛЯЕМ ВСЁ, ЧТО СВЯЗАНО С USER =====
-# - handle_change_role_confirm (нет смены роли)
-# - handle_change_role_yes (нет смены роли)
-# - handle_change_role_no (нет смены роли)
-# - change_role_confirm, change_role_yes, change_role_no callback'и
+# @common_router.callback_query(lambda c: c.data == "settings_menu")
+# async def handle_settings_menu(callback: types.CallbackQuery, state: FSMContext):
+#     """Открыть меню настроек"""
+#     await callback.answer()
+    
+#     async for session in SessionService.get_session():
+#         student = await student_crud.get_by_telegram_id(session, callback.from_user.id)
+        
+#         if not student:
+#             await callback.message.edit_text(
+#                 await MessageService.get_error_message("user_not_found")
+#             )
+#             return
+        
+#         settings_text = await MessageService.get_settings_message(student)
+        
+#         await callback.message.edit_text(
+#             text=settings_text,
+#             reply_markup=settings_menu("student"),  # только ученик
+#             parse_mode="Markdown"
+#         )
 
-# Вместо этого можно добавить простой выход из аккаунта
-@common_router.callback_query(lambda c: c.data == "logout")
-async def handle_logout(callback: types.CallbackQuery, state: FSMContext):
-    """Выйти из аккаунта"""
-    await callback.answer()
-    await state.clear()
-    await callback.message.edit_text(
-        "👋 Вы вышли из аккаунта.\n\n"
-        "Нажмите /start для повторной регистрации."
-    )
+
+# # ===== УДАЛЯЕМ ВСЁ, ЧТО СВЯЗАНО С USER =====
+# # - handle_change_role_confirm (нет смены роли)
+# # - handle_change_role_yes (нет смены роли)
+# # - handle_change_role_no (нет смены роли)
+# # - change_role_confirm, change_role_yes, change_role_no callback'и
+
+# # Вместо этого можно добавить простой выход из аккаунта
+# @common_router.callback_query(lambda c: c.data == "logout")
+# async def handle_logout(callback: types.CallbackQuery, state: FSMContext):
+#     """Выйти из аккаунта"""
+#     await callback.answer()
+#     await state.clear()
+#     await callback.message.edit_text(
+#         "👋 Вы вышли из аккаунта.\n\n"
+#         "Нажмите /start для повторной регистрации."
+#     )

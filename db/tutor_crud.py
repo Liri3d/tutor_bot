@@ -12,24 +12,22 @@ class TutorCRUD(BaseCRUD[Tutor]):
     def __init__(self):
         super().__init__(Tutor)
 
-    async def get_by_login(self, session: AsyncSession, login: str) -> Optional[Tutor]:
-        stmt = select(Tutor).where(Tutor.login == login)
+    async def get_by_telegram_id(self, session: AsyncSession, telegram_id: int) -> Optional[Tutor]:
+        stmt = select(Tutor).where(Tutor.telegram_id == telegram_id)
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(
         self,
         session: AsyncSession,
-        login: str,
-        password_hash: str,
-        first_name: str,
-        username: Optional[str] = None
+        telegram_id: int,
+        username: str,
+        first_name: Optional[str] = None,
     ) -> Tutor:
         tutor = Tutor(
-            login=login,
-            password_hash=password_hash,
-            first_name=first_name,
+            telegram_id=telegram_id,
             username=username,
+            first_name=first_name,
         )
         session.add(tutor)
         await session.commit()

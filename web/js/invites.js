@@ -1,101 +1,49 @@
+// web/js/invites.js — с поддержкой JWT
 function invitesApp() {
     return {
         user: null,
         invites: [],
-        inviteCode: '',
-        modalOpen: false,
-        newInvite: {
-            student_name: '',
-        },
-
+        loading: true,
+        error: '',
+        
         async init() {
-            await this.loadUser();
-            if (this.user) {
-                await this.loadInvites();
-            }
-        },
-        
-        openModal() {
-            this.modalOpen = true;
-            this.newInvite = { student_name: '' };
-        },
-        
-        closeModal() {
-            this.modalOpen = false;
-        },
-        
-        // loadUser() {
-        //     const userData = localStorage.getItem('tutor_user');
-        //     if (userData) {
-        //         this.user = JSON.parse(userData);
-        //     } else {
-        //         window.location.href = '/static/index.html';
-        //     }
-        // },
-        
-        // async loadInvites() {
-        //     try {
-        //         const response = await fetch(`/api/tutors/${this.user.id}/invites`);
-        //         const data = await response.json();
-        //         this.invites = data;
-        //     } catch (e) {
-        //         console.error('Ошибка загрузки приглашений:', e);
-        //         this.invites = [];
-        //     }
-        // },
-        
-
-
-
-
-        async addInvite() {
-            if (!this.newInvite.student_name) {
-                alert('Введите имя ученика');
+            const userData = localStorage.getItem('tutor_user');
+            const token = localStorage.getItem('tutor_jwt_token');
+            
+            if (!userData || !token) {
+                window.location.href = '/';
                 return;
             }
             
+            this.user = JSON.parse(userData);
+            await this.loadInvites();
+            this.loading = false;
+        },
+        
+        async loadInvites() {
             try {
-                const response = await fetch(`/api/tutors/${this.user.id}/invites`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.newInvite)
-                });
+                const token = localStorage.getItem('tutor_jwt_token');
+                const headers = { 'Authorization': `Bearer ${token}` };
+                const response = await fetch(`/api/tutors/${this.user.user_id}/invites`, { headers });
                 
-                if (response.ok) {
-                    
-                    const data = await response.json();
-                    this.inviteCode = data.code;
-                    await this.loadInvites();
-
-                    this.closeModal();
+                if (response.status === 401) {
+                    localStorage.removeItem('tutor_jwt_token');
+                    window.location.href = '/';
+                    return;
                 }
+                
+                const data = await response.json();
+                this.invites = data;
             } catch (e) {
-                console.error('Ошибка создания приглашения:', e);
+                console.error('Ошибка загрузки приглашений:', e);
+                this.error = 'Не удалось загрузить приглашения';
             }
         },
         
-        // copyInvite() {
-        //     const link = `${window.location.origin}/api/invite/${this.inviteCode}`;
-        //     navigator.clipboard?.writeText(link);
-        //     alert('Ссылка скопирована!');
-        // },
-        
-        // copyInviteLink(code) {
-        //     const link = `${window.location.origin}/api/invite/${code}`;
-        //     navigator.clipboard?.writeText(link);
-        //     alert('Ссылка скопирована!');
-        // },
-        
-        // formatDate(dateStr) {
-        //     if (!dateStr) return '';
-        //     const d = new Date(dateStr);
-        //     return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        // },
-        
-        // logout() {
-        //     localStorage.removeItem('tutor_token');
-        //     localStorage.removeItem('tutor_user');
-        //     window.location.href = '/static/index.html';
-        // }
+        logout() {
+            localStorage.removeItem('tutor_jwt_token');
+            localStorage.removeItem('tutor_user');
+            window.location.href = '/';
+        }
     };
 }

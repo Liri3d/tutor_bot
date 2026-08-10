@@ -1,118 +1,49 @@
+// web/js/students.js — с поддержкой JWT
 function studentsApp() {
     return {
         user: null,
         students: [],
-        filteredStudents: [],
-        search: '',
-        filterStatus: 'all',
-        modalOpen: false,
-        newStudent: {
-            name: '',
-            telegram: '',
-            subject: '',
-            lessons: 10,
-            price: 1500
-        },
+        loading: true,
+        error: '',
         
         async init() {
-            await this.loadUser();
-            if (this.user) {
-                await this.loadStudents();
+            const userData = localStorage.getItem('tutor_user');
+            const token = localStorage.getItem('tutor_jwt_token');
+            
+            if (!userData || !token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            this.user = JSON.parse(userData);
+            await this.loadStudents();
+            this.loading = false;
+        },
+        
+        async loadStudents() {
+            try {
+                const token = localStorage.getItem('tutor_jwt_token');
+                const headers = { 'Authorization': `Bearer ${token}` };
+                const response = await fetch(`/api/tutors/${this.user.user_id}/students`, { headers });
+                
+                if (response.status === 401) {
+                    localStorage.removeItem('tutor_jwt_token');
+                    window.location.href = '/';
+                    return;
+                }
+                
+                const data = await response.json();
+                this.students = data;
+            } catch (e) {
+                console.error('Ошибка загрузки учеников:', e);
+                this.error = 'Не удалось загрузить учеников';
             }
         },
         
-        // loadUser() {
-        //     const userData = localStorage.getItem('tutor_user');
-        //     if (userData) {
-        //         this.user = JSON.parse(userData);
-        //     } else {
-        //         window.location.href = '/static/index.html';
-        //     }
-        // },
-        
-        // async loadStudents() {
-        //     try {
-        //         const response = await fetch(`/api/tutors/${this.user.id}/students`);
-        //         const data = await response.json();
-        //         this.students = data;
-        //         this.filterStudents();
-        //     } catch (e) {
-        //         console.error('Ошибка загрузки учеников:', e);
-        //         this.students = [];
-        //     }
-        // },
-        
-        // filterStudents() {
-        //     const searchLower = this.search.toLowerCase();
-        //     this.filteredStudents = this.students.filter(s => {
-        //         const matchSearch = s.name.toLowerCase().includes(searchLower) ||
-        //             (s.telegram && s.telegram.toLowerCase().includes(searchLower));
-        //         const matchStatus = this.filterStatus === 'all' || s.status === this.filterStatus;
-        //         return matchSearch && matchStatus;
-        //     });
-        // },
-        
-        // getStatusText(status) {
-        //     const map = {
-        //         'active': 'Активен',
-        //         'paused': 'Приостановлен',
-        //         'inactive': 'Неактивен'
-        //     };
-        //     return map[status] || status;
-        // },
-        
-        // openModal() {
-        //     this.modalOpen = true;
-        //     this.newStudent = { name: '', telegram: '', subject: '', lessons: 10, price: 1500 };
-        // },
-        
-        // closeModal() {
-        //     this.modalOpen = false;
-        // },
-        
-        // async addStudent() {
-        //     if (!this.newStudent.name) {
-        //         alert('Введите имя ученика');
-        //         return;
-        //     }
-            
-        //     try {
-        //         const response = await fetch(`/api/tutors/${this.user.id}/students`, {
-        //             method: 'POST',
-        //             headers: { 'Content-Type': 'application/json' },
-        //             body: JSON.stringify(this.newStudent)
-        //         });
-                
-        //         if (response.ok) {
-        //             await this.loadStudents();
-        //             this.closeModal();
-        //         }
-        //     } catch (e) {
-        //         console.error('Ошибка добавления ученика:', e);
-        //     }
-        // },
-        
-        // viewStudent(id) {
-        //     window.location.href = `/static/student.html?id=${id}`;
-        // },
-        
-        // async deleteStudent(id) {
-        //     if (!confirm('Удалить ученика?')) return;
-            
-        //     try {
-        //         await fetch(`/api/tutors/${this.user.id}/students/${id}`, {
-        //             method: 'DELETE'
-        //         });
-        //         await this.loadStudents();
-        //     } catch (e) {
-        //         console.error('Ошибка удаления ученика:', e);
-        //     }
-        // },
-        
-        // logout() {
-        //     localStorage.removeItem('tutor_token');
-        //     localStorage.removeItem('tutor_user');
-        //     window.location.href = '/static/index.html';
-        // }
+        logout() {
+            localStorage.removeItem('tutor_jwt_token');
+            localStorage.removeItem('tutor_user');
+            window.location.href = '/';
+        }
     };
 }

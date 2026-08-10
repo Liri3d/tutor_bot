@@ -1,8 +1,8 @@
 from .session import db_init_db, db_get_session
-from .models import Base, Tutor, Student, Invite, Relationship
+from .models import Base, Tutor, Student, Invite, TutorStudentLink
 from .tutor_crud import tutor_crud
 from .student_crud import student_crud
-from .relp_crud import relp_crud
+from .link_crud import link_crud
 from .invite_crud import invite_crud
 
 __all__ = [
@@ -12,9 +12,9 @@ __all__ = [
     'Tutor',
     'Student',
     'Invite',
-    'Relationship',
+    'TutorStudentLink',
     'tutor_crud',
     'student_crud',
-    'relp_crud',  
+    'link_crud',  
     'invite_crud',
 ]

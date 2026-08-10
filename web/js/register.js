@@ -16,7 +16,6 @@ function registerApp() {
                     const msg = urlParams.get('message');
                     if (msg) {
                         this.message = decodeURIComponent(msg);
-                        // Убираем сообщение через 3 секунды
                         setTimeout(() => {
                             this.message = '';
                         }, 5000);
@@ -25,11 +24,6 @@ function registerApp() {
 
                 async register() {
                     // Валидация
-                    // if (!this.form.first_name || this.form.first_name.length < 2) {
-                    //     this.error = 'Имя должно содержать минимум 2 символа';
-                    //     return;
-                    // }
-
                     if (!this.form.login || this.form.login.length < 3) {
                         this.error = 'Логин должен содержать минимум 3 символа';
                         return;
@@ -57,7 +51,7 @@ function registerApp() {
                             body: JSON.stringify({
                                 login: this.form.login,
                                 password: this.form.password,
-                                first_name: this.form.first_name
+                                first_name: this.form.first_name || this.form.login
                             })
                         });
 
@@ -65,7 +59,6 @@ function registerApp() {
 
                         if (response.ok && data.status === 'registered') {
                             // Успешная регистрация
-                            const login = this.form.login;
                             this.message = '✅ ' + (data.message || 'Регистрация успешна!');
                             
                             // Очищаем форму
@@ -76,12 +69,12 @@ function registerApp() {
                                 confirmPassword: ''
                             };
 
-                            console.log('Редирект на главную с логином:', login); 
+                            console.log('Редирект на главную с логином:', this.form.login); 
                             
                             // Перенаправляем на страницу входа через 2 секунды
                             setTimeout(() => {
                                 window.location.href = '/?message=' + 
-                                    encodeURIComponent('Регистрация успешна! Теперь войдите в систему.') + '&login=' + encodeURIComponent(login);
+                                    encodeURIComponent('Регистрация успешна! Теперь войдите в систему.') + '&login=' + encodeURIComponent(this.form.login);
                             }, 2000);
 
                         } else {

@@ -1,12 +1,14 @@
 # services/auth_svc.py
 import secrets
-import hashlib
 from typing import Optional
+from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.tutor_crud import tutor_crud
-
 from db.models import Tutor
+
+# Настройка bcrypt через passlib — криптографически стойкая альтернатива hashlib
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
@@ -14,38 +16,65 @@ class AuthService:
 
     @staticmethod
     def hash_password(password: str) -> str:
-        salt = secrets.token_hex(16)
-        hash_obj = hashlib.sha256((salt + password).encode()).hexdigest()
-        return f"{salt}:{hash_obj}"
+        """
+        Хеширование пароля с использованием bcrypt.
+        
+        Bcrypt автоматически генерирует соль и включает cost factor,
+        что делает его устойчивым к брутфорсу и rainbow table атакам.
+        
+        Args:
+            password: Пароль в открытом виде
+            
+        Returns:
+            str: Хеш пароля в формате bcrypt
+        """
+        return pwd_context.hash(password)
 
     @staticmethod
     def verify_password(password: str, password_hash: str) -> bool:
-        try:
-            salt, stored_hash = password_hash.split(':')
-            calculated_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            return calculated_hash == stored_hash
-        except:
-            return False
+        """
+        Проверка пароля против хеша.
+        
+        Args:
+            password: Пароль в открытом виде
+            password_hash: Хеш пароля (bcrypt формат)
+            
+        Returns:
+            bool: True если пароль совпал
+        """
+        # Если хеш не в формате bcrypt (старый format salt:hash),
+        # пытаемся распарсить и проверить через старый метод
+        if ':' in password_hash and not password_hash.startswith('$2'):
+            try:
+                salt, stored_hash = password_hash.split(':', 1)
+                import hashlib
+                calculated_hash = hashlib.sha256((salt + password).encode()).hexdigest()
+                return calculated_hash == stored_hash
+            except:
+                return False
+        
+        return pwd_context.verify(password, password_hash)
 
     @staticmethod
     async def register_tutor(
         session: AsyncSession,
         login: str,
         password: str,
-        first_name: str
+        name: str
     ) -> Tutor:
         """Регистрация репетитора"""
         existing = await tutor_crud.get_by_login(session, login)
         if existing:
             raise ValueError("Логин уже занят")
         
+        # Используем bcrypt для хеширования
         password_hash = AuthService.hash_password(password)
         
         tutor = await tutor_crud.create(
             session=session,
             login=login,
             password_hash=password_hash,
-            first_name=first_name
+            name=name
         )
         return tutor
 
