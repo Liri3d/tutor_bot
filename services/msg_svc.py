@@ -3,7 +3,7 @@
 from typing import Tuple, Optional, List
 from aiogram.types import InlineKeyboardMarkup
 from db.models import Tutor, Student, Invite
-from keyboards import tutor_main_menu, student_main_menu
+from keyboards import tutor_menu_keyboard, student_menu_keyboard
 
 
 class MessageService:
@@ -22,10 +22,10 @@ class MessageService:
         """
         if hasattr(user, 'login'):  # это Tutor
             text = f"👋 С возвращением, {user.first_name or 'репетитор'}!\n\nВыберите действие:"
-            keyboard = tutor_main_menu()
+            keyboard = tutor_menu_keyboard()
         else:  # это Student
             text = f"👋 С возвращением, {user.first_name or 'ученик'}!\n\nВыберите действие:"
-            keyboard = student_main_menu()
+            keyboard = student_menu_keyboard()
         
         return text, keyboard
 
@@ -82,19 +82,16 @@ class MessageService:
             "Ссылку можно получить у вашего репетитора."
         )
 
-    @staticmethod
-    async def get_start_message() -> str:
-        """
-        Получить стартовое сообщение для нового пользователя.
+    # @staticmethod
+    # async def get_start_message() -> str:
+    #     """
+    #     Получить стартовое сообщение для нового пользователя.
         
-        Returns:
-            str: Текст сообщения
-        """
-        return (
-            "👋 Добро пожаловать в Tutor Bot!\n\n"
-            "Я помогу вам управлять своим расписанием.\n\n"
-            "Вы ученик или репетитор?"
-        )
+    #     Returns:
+    #         str: Текст сообщения
+    #     """
+    #     return "👋 Добро пожаловать в Tutor Bot!\n\nЯ помогу вам управлять расписанием и учениками.\n\nНажмите кнопку '🚀 Старт', чтобы начать:", start_menu_keyboard()
+        
 
     @staticmethod
     async def get_error_message(
@@ -339,9 +336,9 @@ class MessageService:
         """
         if hasattr(user, 'login'):  # это Tutor
             text = "👋 Главное меню репетитора:"
-            keyboard = tutor_main_menu()
+            keyboard = tutor_menu_keyboard()
         else:  # это Student
             text = "👋 Главное меню ученика:"
-            keyboard = student_main_menu()
+            keyboard = student_menu_keyboard()
 
         return text, keyboard

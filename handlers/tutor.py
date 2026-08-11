@@ -1,14 +1,14 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
-    
+
 from keyboards import (
     settings_menu,
-    tutor_main_menu,
+    tutor_menu_keyboard,
     build_students_keyboard,
     student_detail_menu
 )
 
-from db import tutor_crud, student_crud
+from db import tutor_crud, student_crud, Tutor
 from keyboards import tutor_kb
 
 from states import TutorStates
@@ -51,7 +51,7 @@ async def handle_student_name(message: types.Message, state: FSMContext):
         await state.clear()
         await message.answer(
             "Выберите действие:",
-            reply_markup=tutor_main_menu()
+            reply_markup=tutor_menu_keyboard()
         )
         return
     
@@ -115,7 +115,7 @@ async def handle_student_age(message: types.Message, state: FSMContext):
         await state.clear()
         await message.answer(
             "Выберите действие:",
-            reply_markup=tutor_main_menu()
+            reply_markup=tutor_menu_keyboard()
         )
         return
     
@@ -160,7 +160,7 @@ async def handle_student_subject(message: types.Message, state: FSMContext):
         await state.clear()
         await message.answer(
             "Выберите действие:",
-            reply_markup=tutor_main_menu()
+            reply_markup=tutor_menu_keyboard()
         )
         return
     
@@ -213,18 +213,13 @@ async def handle_student_subject(message: types.Message, state: FSMContext):
                 f"📅 Возраст: {student.age or 'Не указан'}\n"
                 f"📖 Предмет: {student.subject or 'Не указан'}\n"
                 f"🆔 ID: {student.id}\n\n",
-                # f"📌 **Что дальше?**\n"
-                # f"1️⃣ Ученик пока не в Telegram-боте\n"
-                # f"2️⃣ Вы можете создать приглашение для него\n"
-                # f"3️⃣ Когда ученик перейдёт по ссылке, он автоматически подключится\n\n"
-                # f"💡 Нажмите '🔗 Пригласить ученика', чтобы создать ссылку.",
                 parse_mode="Markdown"
             )
             
             # Показываем меню
             await message.answer(
                 "Выберите действие:",
-                reply_markup=tutor_main_menu()
+                reply_markup=tutor_menu_keyboard()
             )
             
             await state.clear()
@@ -245,43 +240,66 @@ async def handle_cancel_action(callback: types.CallbackQuery, state: FSMContext)
     )
     await callback.message.answer(
         "Выберите действие:",
-        reply_markup=tutor_main_menu()
+        reply_markup=tutor_menu_keyboard()
     )
 
 
-
-# async def _show_students_list(
-#     callback: types.CallbackQuery,
-#     session,
-#     user
-# ) -> None:
-#     """
-#     Общая логика показа списка учеников.
-#     Используется в handle_tutor_students и handle_back_to_tutor_students.
-#     """
-#     students = await RelationshipService.get_tutor_students(session, user.id)
-
-#     if students:
-#         response_text = await MessageService.format_student_list(students)
-#         keyboard = build_students_keyboard(students, user.id)
+async def _show_students_list(
+    message_or_callback: types.Message | types.CallbackQuery,
+    session,
+    tutor: Tutor
+) -> None:
+    """
+    Общая логика отображения списка учеников.
+    Используется в handle_tutor_students и handle_back_to_tutor_students.
+    
+    Args:
+        message_or_callback: Message или CallbackQuery для ответа
+        session: Сессия БД
+        tutor: Объект репетитора
+    """
+    students = await link_crud.get_students_for_tutor(session, tutor.id)
+    
+    if students:
+        # Формируем текст со списком учеников
+        text = "👥 **Ваши ученики:**\n\n"
         
-#         await callback.message.edit_text(
-#             text=response_text,
-#             reply_markup=keyboard,
-#             parse_mode="Markdown"
-#         )
-#     else:
-#         await callback.message.edit_text(
-#             text=await MessageService.get_error_message("no_students"),
-#             reply_markup=tutor_main_menu()
-#         )
+        keyboard = build_students_keyboard(students, tutor.id)
+        
+        # Определяем, как отвечать - через message или callback
+        if isinstance(message_or_callback, types.CallbackQuery):
+            await message_or_callback.message.edit_text(
+                text=text,
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+        else:
+            await message_or_callback.answer(
+                text=text,
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+    else:
+        empty_text = "👤 У вас пока нет учеников.\n\nНажмите ➕ Добавить ученика, чтобы добавить первого ученика."
+        
+        if isinstance(message_or_callback, types.CallbackQuery):
+            await message_or_callback.message.edit_text(
+                text=empty_text,
+                reply_markup=tutor_menu_keyboard()
+            )
+        else:
+            await message_or_callback.answer(
+                text=empty_text,
+                reply_markup=tutor_menu_keyboard()
+            )
+
 
 @tutor_router.callback_query(lambda c: c.data == "tutor_students")
 async def handle_tutor_students(callback: types.CallbackQuery, state: FSMContext):
     """Репетитор хочет просмотреть список учеников"""
     await callback.answer()
-    
-    # Проверяем, что пользователь — репетитор
+    await state.clear()
+
     async for session in SessionService.get_session():
         tutor = await tutor_crud.get_by_telegram_id(session, callback.from_user.id)
         if not tutor:
@@ -291,31 +309,7 @@ async def handle_tutor_students(callback: types.CallbackQuery, state: FSMContext
             )
             return
         
-        students = await link_crud.get_students_for_tutor(session, tutor.id)
-        
-        if students:
-            # Формируем текст со списком учеников
-            text = "👥 **Ваши ученики**\n\n"
-            for idx, student in enumerate(students, 1):
-                text += f"{idx}. {student.student_name or student.first_name or 'Без имени'}"
-                if student.subject:
-                    text += f" - 📖 {student.subject}"
-                text += "\n"
-            
-            # Создаём клавиатуру с учениками
-            keyboard = build_students_keyboard(students, tutor.id)
-            
-            await callback.message.edit_text(
-                text=text,
-                reply_markup=keyboard,
-                parse_mode="Markdown"
-            )
-        else:
-            await callback.message.edit_text(
-                "👤 У вас пока нет учеников.\n\n"
-                "Нажмите ➕ Добавить ученика, чтобы добавить первого ученика.",
-                reply_markup=tutor_main_menu()
-            )
+        await _show_students_list(callback, session, tutor)
 
 @tutor_router.callback_query(lambda c: c.data and c.data.startswith("student_"))
 async def handle_student_click(callback: types.CallbackQuery, state: FSMContext):
@@ -370,42 +364,12 @@ async def handle_student_click(callback: types.CallbackQuery, state: FSMContext)
 async def handle_back_to_tutor_students(callback: types.CallbackQuery, state: FSMContext):
     """Вернуться к списку учеников"""
     await callback.answer()
-    
+    await state.clear()
+
     async for session in SessionService.get_session():
         tutor = await tutor_crud.get_by_telegram_id(session, callback.from_user.id)
         if not tutor:
             await callback.message.edit_text("❌ Вы не репетитор.")
             return
         
-        students = await link_crud.get_students_for_tutor(session, tutor.id)
-        
-        if students:
-            text = "👥 **Ваши ученики**\n\n"
-            for idx, student in enumerate(students, 1):
-                text += f"{idx}. {student.student_name or student.first_name or 'Без имени'}"
-                if student.subject:
-                    text += f" - 📖 {student.subject}"
-                text += "\n"
-            
-            keyboard = build_students_keyboard(students, tutor.id)
-            
-            await callback.message.edit_text(
-                text=text,
-                reply_markup=keyboard,
-                parse_mode="Markdown"
-            )
-        else:
-            await callback.message.edit_text(
-                "👤 У вас пока нет учеников.",
-                reply_markup=tutor_main_menu()
-            )
-
-
-
-
-
-
-
-
-
-
+        await _show_students_list(callback, session, tutor)

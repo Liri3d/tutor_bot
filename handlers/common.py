@@ -1,17 +1,17 @@
-# handlers/common.py
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove
 import logging
 
+
 from states import RegisterStates
 from keyboards import (
     role_keyboard,
-    student_main_menu,
-    tutor_main_menu,
-    settings_menu,
-    confirm_change_role_menu
+    start_menu_keyboard,
+    student_menu_keyboard,
+    tutor_menu_keyboard,
+
 )
 from services import (
     SessionService,
@@ -48,64 +48,116 @@ async def cmd_start(message: types.Message, state: FSMContext):
     async for session in SessionService.get_session():
         # Проверяем, есть ли пользователь в БД
         student = await student_crud.get_by_telegram_id(session, message.from_user.id)
-        tutor = None
-        
-        # Если не нашли ученика, может быть репетитор (у них нет telegram_id)
-        # В текущей архитектуре репетиторы не имеют telegram_id, поэтому ищем по-другому
-        # Для MVP: если есть инвайт-код — регистрируем ученика
-        # Если нет — предлагаем выбрать роль
+        tutor = await tutor_crud.get_by_telegram_id(session, message.from_user.id)
 
         if invite_code:
-            try:
-                # Регистрируем ученика по инвайту
-                student, tutor = await StudentService.register_by_invite(
-                    session=session,
-                    telegram_id=message.from_user.id,
-                    username=message.from_user.username,
-                    first_name=message.from_user.first_name,
-                    invite_code=invite_code
-                )
+            # try:
+            #     # Регистрируем ученика по инвайту
+            #     student, tutor = await StudentService.register_by_invite(
+            #         session=session,
+            #         telegram_id=message.from_user.id,
+            #         username=message.from_user.username,
+            #         first_name=message.from_user.first_name,
+            #         invite_code=invite_code
+            #     )
 
-                success_text = await MessageService.get_registration_success_message(
-                    student, "student"
-                )
-                await message.answer(success_text, parse_mode="Markdown")
+            #     success_text = await MessageService.get_registration_success_message(
+            #         student, "student"
+            #     )
+            #     await message.answer(success_text,
+            #                          parse_mode="Markdown",
+            #                          reply_markup=student_menu_keyboard())
                 
-                await NotificationService.notify_tutor_about_new_student(
-                    bot=message.bot,
-                    tutor_telegram_id=tutor.telegram_id,
-                    student_first_name=student.first_name or "Без имени",
-                    student_username=student.username
-                )
+            #     await NotificationService.notify_tutor_about_new_student(
+            #         bot=message.bot,
+            #         tutor_telegram_id=tutor.telegram_id,
+            #         student_first_name=student.first_name or "Без имени",
+            #         student_username=student.username
+            #     )
                 
-                await message.answer(
-                    "Выберите действие:",
-                    reply_markup=student_main_menu()
-                )
+            #     await message.answer(
+            #         "Выберите действие:",
+            #         reply_markup=student_menu_keyboard()
+            #     )
                 
-                await state.clear()
-                return
+            #     await state.clear()
+            #     return
 
-            except ValueError as e:
-                await message.answer(f"❌ {str(e)}")
-                return
+            # except ValueError as e:
+            #     await message.answer(f"❌ {str(e)}")
+            #     return
                    
+            # TODO
+            pass
+        
         # Если пользователь уже зарегистрирован как ученик
         if student:
-            welcome_text, welcome_keyboard = await MessageService.get_welcome_message(student)
-            await message.answer(welcome_text, reply_markup=welcome_keyboard)
+            welcome_text = f"👋 С возвращением, {student.first_name or 'ученик'}!\n\nВыберите действие:"
+            await message.answer(
+                welcome_text,
+                reply_markup=student_menu_keyboard()  
+            )
             return
-            
-        # Для репетиторов: нужно искать по другому признаку
-        # В текущей архитектуре у репетитора нет telegram_id,
-        # поэтому проверяем, не зарегистрирован ли уже пользователь как репетитор
-        # (для MVP можно сделать через дополнительный запрос)
+
+        # Если пользователь уже зарегистрирован как репетитор
+        if tutor:
+            welcome_text = f"👋 С возвращением, {tutor.first_name or 'репетитор'}!\n\nВыберите действие:"
+            await message.answer(
+                welcome_text,
+                reply_markup=tutor_menu_keyboard()  
+            )
+            return
         
-        # Если пользователь не зарегистрирован и нет кода — предлагаем выбрать роль
+        # Если пользователь не зарегистрирован — показываем кнопку Старт
         await state.set_state(RegisterStates.waiting_for_role)
         await message.answer(
-            await MessageService.get_start_message(),
-            reply_markup=role_keyboard()
+            "👋 Добро пожаловать в Tutor Bot!\n\n"
+            "Я помогу вам управлять расписанием и учениками.\n\n"
+            "Нажмите кнопку '🚀 Старт', чтобы начать:",
+            reply_markup=start_menu_keyboard()  # ← показываем кнопку Старт
+        )
+
+@common_router.message(Command("help"))
+async def cmd_help(message: types.Message):
+    """Справка по командам бота"""
+    help_text = (
+        "🤖 Помощь по Tutor Bot\n\n"  # ← * вместо ** для Markdown
+    )
+    await message.answer(help_text, parse_mode="Markdown")
+
+@common_router.message(lambda message: message.text == "🚀 Старт")
+async def handle_start_button(message: types.Message, state: FSMContext):
+    """Обработчик нажатия на кнопку '🚀 Старт'"""
+    await state.clear()
+    
+    async for session in SessionService.get_session():
+        # Проверяем, есть ли пользователь в БД
+        student = await student_crud.get_by_telegram_id(session, message.from_user.id)
+        tutor = await tutor_crud.get_by_telegram_id(session, message.from_user.id)
+        
+        # Если ученик
+        if student:
+            await message.answer(
+                f"👋 С возвращением, {student.first_name or 'ученик'}!\n\nВыберите действие:",
+                reply_markup=student_menu_keyboard()
+            )
+            return
+        
+        # Если репетитор
+        if tutor:
+            await message.answer(
+                f"👋 С возвращением, {tutor.first_name or 'репетитор'}!\n\nВыберите действие:",
+                reply_markup=tutor_menu_keyboard()
+            )
+            return
+        
+        # Если не зарегистрирован - предлагаем выбрать роль
+        await state.set_state(RegisterStates.waiting_for_role)
+        await message.answer(
+            "👋 Добро пожаловать в Tutor Bot!\n\n"
+            "Я помогу вам управлять расписанием и учениками.\n\n"
+            "Вы ученик или репетитор?",
+            reply_markup=role_keyboard()  # ← показываем инлайн-кнопки выбора роли
         )
 
 
@@ -123,7 +175,7 @@ async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
             )
             await callback.message.answer(
                 "Выберите действие:",
-                reply_markup=tutor_main_menu()
+                reply_markup=tutor_menu_keyboard()
             )
             await state.clear()
             return
@@ -148,7 +200,7 @@ async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
     
     await callback.message.answer(
         "Выберите действие:",
-        reply_markup=tutor_main_menu()
+        reply_markup=tutor_menu_keyboard()
     )
     await state.clear()
 
@@ -185,47 +237,6 @@ async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
     )
     await state.set_state(RegisterStates.waiting_for_invite)
 
-
-# @common_router.message(RegisterStates.waiting_for_invite)
-# async def handle_invite_input(message: types.Message, state: FSMContext):
-#     """Ученик переходит по ссылке-приглашению"""
-#     invite_code = message.text.strip()
-
-#     async for session in SessionService.get_session():
-#         try:
-#             student, tutor = await StudentService.register_by_invite(
-#                 session=session,
-#                 telegram_id=message.from_user.id,
-#                 username=message.from_user.username,
-#                 first_name=message.from_user.first_name,
-#                 invite_code=invite_code
-#             )
-        
-#             success_text = await MessageService.get_connect_success_message(tutor)
-        
-#             await message.answer(
-#                 success_text,
-#                 parse_mode="Markdown"
-#             )
-
-#             await NotificationService.notify_tutor_about_new_student(
-#                 bot=message.bot,
-#                 tutor_telegram_id=tutor.telegram_id,
-#                 student_first_name=student.first_name or "Без имени",
-#                 student_username=student.username
-#             )
-
-#             await message.answer(
-#                 "Выберите действие:",
-#                 reply_markup=student_main_menu()
-#             )
-        
-#             await state.clear()
-
-#         except ValueError as e:
-#             await message.answer(f"❌ {str(e)}")
-
-
 @common_router.callback_query(lambda c: c.data == "back_to_main")
 async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
     """Вернуться в главное меню"""
@@ -238,7 +249,7 @@ async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.edit_text(
                 "👋 Главное меню репетитора:\n\n"
                 "Выберите действие:",
-                reply_markup=tutor_main_menu()
+                reply_markup=tutor_menu_keyboard()
             )
             await state.clear()
             return
@@ -249,7 +260,7 @@ async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.edit_text(
                 "👋 Главное меню ученика:\n\n"
                 "Выберите действие:",
-                reply_markup=student_main_menu()
+                reply_markup=student_menu_keyboard()
             )
             await state.clear()
             return
@@ -260,43 +271,31 @@ async def handle_back_to_main(callback: types.CallbackQuery, state: FSMContext):
             "Нажмите /start для регистрации."
         )
 
-
-# @common_router.callback_query(lambda c: c.data == "settings_menu")
-# async def handle_settings_menu(callback: types.CallbackQuery, state: FSMContext):
-#     """Открыть меню настроек"""
-#     await callback.answer()
+@common_router.message(lambda message: message.text == "🔙 В главное меню")
+async def handle_back_to_main_button(message: types.Message, state: FSMContext):
+    """Возврат в главное меню по reply-кнопке"""
+    await state.clear()
     
-#     async for session in SessionService.get_session():
-#         student = await student_crud.get_by_telegram_id(session, callback.from_user.id)
+    async for session in SessionService.get_session():
+        # Проверяем, кто пользователь
+        tutor = await tutor_crud.get_by_telegram_id(session, message.from_user.id)
+        if tutor:
+            await message.answer(
+                "👋 Главное меню репетитора:",
+                reply_markup=tutor_menu_keyboard()
+            )
+            return
         
-#         if not student:
-#             await callback.message.edit_text(
-#                 await MessageService.get_error_message("user_not_found")
-#             )
-#             return
+        student = await student_crud.get_by_telegram_id(session, message.from_user.id)
+        if student:
+            await message.answer(
+                "👋 Главное меню ученика:",
+                reply_markup=student_menu_keyboard()
+            )
+            return
         
-#         settings_text = await MessageService.get_settings_message(student)
-        
-#         await callback.message.edit_text(
-#             text=settings_text,
-#             reply_markup=settings_menu("student"),  # только ученик
-#             parse_mode="Markdown"
-#         )
-
-
-# # ===== УДАЛЯЕМ ВСЁ, ЧТО СВЯЗАНО С USER =====
-# # - handle_change_role_confirm (нет смены роли)
-# # - handle_change_role_yes (нет смены роли)
-# # - handle_change_role_no (нет смены роли)
-# # - change_role_confirm, change_role_yes, change_role_no callback'и
-
-# # Вместо этого можно добавить простой выход из аккаунта
-# @common_router.callback_query(lambda c: c.data == "logout")
-# async def handle_logout(callback: types.CallbackQuery, state: FSMContext):
-#     """Выйти из аккаунта"""
-#     await callback.answer()
-#     await state.clear()
-#     await callback.message.edit_text(
-#         "👋 Вы вышли из аккаунта.\n\n"
-#         "Нажмите /start для повторной регистрации."
-#     )
+        # Если не найден
+        await message.answer(
+            "❌ Пользователь не найден.",
+            reply_markup=start_menu_keyboard()
+        )

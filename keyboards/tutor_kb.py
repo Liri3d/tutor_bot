@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from db.models import Student
 
-def tutor_main_menu() -> InlineKeyboardMarkup:
+def tutor_menu_keyboard() -> InlineKeyboardMarkup:
     """Главное меню репетитора"""
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -36,7 +36,7 @@ def build_students_keyboard(students: list[Student], tutor_id: int) -> InlineKey
     
     for student in students:
         # Формируем текст кнопки: имя + username (если есть)
-        button_text = student.first_name or "Без имени"
+        button_text = student.student_name or student.first_name or student.username
         if student.username:
             button_text += f" (@{student.username})"
         

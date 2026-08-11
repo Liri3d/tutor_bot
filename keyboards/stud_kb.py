@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-def student_main_menu() -> InlineKeyboardMarkup:
+def student_menu_keyboard() -> InlineKeyboardMarkup:
     """Главное меню ученика"""
     return InlineKeyboardMarkup(
         inline_keyboard=[
