@@ -195,7 +195,7 @@ async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
         f"{'Username: @' + tutor.username if tutor.first_name else ''}\n"
         f"🆔 Telegram ID: {tutor.telegram_id}\n\n"
         f"Теперь вы можете управлять своими учениками через бота!",
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
     
     await callback.message.answer(

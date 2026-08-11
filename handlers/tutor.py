@@ -208,7 +208,7 @@ async def handle_student_subject(message: types.Message, state: FSMContext):
             await message.answer(
                 f"✅ **Ученик успешно добавлен!**\n\n"
                 f"📋 **Данные ученика:**\n"
-                f"👤 Имя: {student.first_name}\n"
+                f"👤 Имя: {student.student_name or student.first_name}\n"
                 f"⚧ Пол: {student.gender or 'Не указан'}\n"
                 f"📅 Возраст: {student.age or 'Не указан'}\n"
                 f"📖 Предмет: {student.subject or 'Не указан'}\n"

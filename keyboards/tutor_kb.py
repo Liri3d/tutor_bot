@@ -45,7 +45,12 @@ def build_students_keyboard(students: list[Student], tutor_id: int) -> InlineKey
             text=button_text,
             callback_data=f"student_{student.id}"  # Уникальный идентификатор
         )
-    
+
+    builder.button(
+            text="➕ Добавить ученика",
+            callback_data="tutor_add_student"
+        )
+                
     # Добавляем кнопку "Назад" в меню репетитора
     builder.button(
         text="🔙 Назад",
