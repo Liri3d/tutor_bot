@@ -1,7 +1,7 @@
 # db/models.py
 from datetime import datetime, timedelta
 from typing import Optional
-from sqlalchemy import String, DateTime, Boolean, ForeignKey, BigInteger, JSON
+from sqlalchemy import String, DateTime, Boolean, ForeignKey, BigInteger, JSON, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -111,3 +111,39 @@ class Invite(Base):
 
     def __repr__(self):
         return f"<Invite(code={self.code}, tutor_id={self.tutor_id}, used={self.is_used})>"
+
+class Lesson(Base):
+    """Занятие репетитора с учеником"""
+    __tablename__ = "lessons"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    tutor_id: Mapped[int] = mapped_column(
+        ForeignKey("tutors.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    duration_minutes: Mapped[int] = mapped_column(nullable=False, default=60)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="scheduled"
+        # scheduled, completed, cancelled, missed
+    )
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now
+    )
+    
+    # Связи
+    tutor: Mapped["Tutor"] = relationship("Tutor", backref="lessons")
+    student: Mapped["Student"] = relationship("Student", backref="lessons")
+
+    def __repr__(self):
+        return f"<Lesson(id={self.id}, start_time={self.start_time}, status={self.status})>"

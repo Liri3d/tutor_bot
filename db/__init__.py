@@ -1,5 +1,5 @@
 from .session import db_init_db, db_get_session
-from .models import Base, Tutor, Student, Invite, TutorStudentLink
+from .models import Base, Tutor, Student, Invite, TutorStudentLink, Lesson
 from .tutor_crud import tutor_crud
 from .student_crud import student_crud
 from .link_crud import link_crud

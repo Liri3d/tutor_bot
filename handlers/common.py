@@ -204,7 +204,6 @@ async def handle_role_tutor(callback: types.CallbackQuery, state: FSMContext):
     )
     await state.clear()
 
-
 @common_router.callback_query(lambda c: c.data == "role_student")
 async def handle_role_student(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь выбрал роль ученика"""
