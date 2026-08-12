@@ -213,14 +213,12 @@ SQLITE_WEB_PORT = 8080
 
 @app.api_route("/sqlite-web/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "HEAD"])
 async def proxy_sqlite_all(request: Request, path: str):
-    """Проксирует ВСЕ запросы к sqlite-web (GET, POST и т.д.)"""
+    """Проксирует ВСЕ запросы к sqlite-web"""
     url = f"http://localhost:{SQLITE_WEB_PORT}/{path}"
     
-    # Добавляем query параметры
     if request.query_params:
         url += f"?{request.query_params}"
     
-    # Получаем тело запроса (для POST)
     body = await request.body()
     
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -232,7 +230,6 @@ async def proxy_sqlite_all(request: Request, path: str):
                 content=body if body else None
             )
             
-            # Возвращаем ответ
             return Response(
                 content=response.content,
                 status_code=response.status_code,
@@ -259,21 +256,66 @@ async def proxy_sqlite_root_slash():
     """Корень sqlite-web"""
     return await proxy_sqlite_all(Request(scope={"type": "http", "method": "GET"}), "")
 
-@app.get("/debug-sqlite")
-async def debug_sqlite():
-    """Проверка, что sqlite-web доступен"""
-    import httpx
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:8080/")
-            return {
-                "status": "ok",
-                "status_code": response.status_code,
-                "content_length": len(response.content),
-                "content_preview": response.text[:200] if response.text else "empty"
-            }
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+# Прокси для статических файлов sqlite-web
+@app.api_route("/static/{path:path}", methods=["GET", "HEAD"])
+async def proxy_static(request: Request, path: str):
+    """Проксирует запросы к статическим файлам sqlite-web"""
+    url = f"http://localhost:{SQLITE_WEB_PORT}/static/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.get(url, headers=dict(request.headers))
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+        except Exception as e:
+            return Response(f"Ошибка прокси статики: {e}", status_code=500)
+
+# Прокси для /query/ (страница SQL-запросов)
+@app.api_route("/query/{path:path}", methods=["GET", "POST"])
+async def proxy_query(request: Request, path: str):
+    """Проксирует запросы к /query/"""
+    url = f"http://localhost:{SQLITE_WEB_PORT}/query/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    
+    body = await request.body()
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=dict(request.headers),
+                content=body if body else None
+            )
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+        except Exception as e:
+            return Response(f"Ошибка прокси: {e}", status_code=500)
+
+# Прокси для /download/
+@app.api_route("/download/{path:path}", methods=["GET"])
+async def proxy_download(request: Request, path: str):
+    """Проксирует запросы к /download/"""
+    url = f"http://localhost:{SQLITE_WEB_PORT}/download/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.get(url, headers=dict(request.headers))
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+        except Exception as e:
+            return Response(f"Ошибка прокси: {e}", status_code=500)
