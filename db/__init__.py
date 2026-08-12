@@ -4,6 +4,7 @@ from .tutor_crud import tutor_crud
 from .student_crud import student_crud
 from .link_crud import link_crud
 from .invite_crud import invite_crud
+from .lesson_crud import lesson_crud
 
 __all__ = [
     'db_init_db',
@@ -17,4 +18,5 @@ __all__ = [
     'student_crud',
     'link_crud',  
     'invite_crud',
+    'lesson_crud',
 ]
