@@ -10,8 +10,7 @@ build:
   useCache: true
 
 run:
-  command: gunicorn wsgi_sqlite:application --bind 0.0.0.0:${PORT}
   persistenceMount: /data
   scriptName: run.py
-  containerPort: ${PORT}
-  servicePort: ${PORT}
+  containerPort: 80
+  servicePort: 80

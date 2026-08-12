@@ -16,6 +16,20 @@ logging.basicConfig(level=logging.INFO)
 
 RUN_FRONTEND = os.getenv("RUN_FRONTEND", "true").lower() == "true"
 
+def run_sqlite_web():
+    """Запуск sqlite-web в отдельном потоке"""
+    try:
+        # Используем тот же порт, что и основной сервер? Нет, нужен другой порт!
+        # Но на Amvera только один порт доступен снаружи...
+        # Поэтому используем внутренний порт 8080
+        subprocess.Popen([
+            "gunicorn", "wsgi_sqlite:application",
+            "--bind", "0.0.0.0:8080"
+        ])
+        print("📊 sqlite-web запущен на порту 8080 (внутренний)")
+    except Exception as e:
+        print(f"⚠️ Не удалось запустить sqlite-web: {e}")
+
 async def run_bot():
     """Запуск бота"""
     bot = Bot(token=BOT_TOKEN)
@@ -41,6 +55,9 @@ async def run_api():
     
 async def main():
     await SessionService.init_db()
+
+    run_sqlite_web()
+    
     await asyncio.gather(run_bot()) # run_api()
 
 if __name__ == "__main__":

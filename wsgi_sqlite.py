@@ -1,11 +1,20 @@
 from sqlite_web import app, initialize_app
-import os 
+import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./tutor_bot.db")
+# ПРЯМОЙ ПУТЬ к файлу базы данных (НЕ URL!)
+DB_PATH = '/data/tutor_bot.db'  # замените на имя вашего файла
 
-# Здесь укажите ПУТЬ к вашему файлу БД в постоянном хранилище Amvera
-# Папка для данных на Amvera - /data [citation:9]
-initialize_app(DATABASE_URL, read_only=True)
+# Проверяем, существует ли файл
+if not os.path.exists(DB_PATH):
+    print(f"⚠️ ВНИМАНИЕ: База данных не найдена по пути {DB_PATH}")
+    # Если файла нет, создадим временный, чтобы избежать ошибки
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    conn.close()
+    print(f"✅ Создан пустой файл базы данных: {DB_PATH}")
 
-# Объект 'app' и будет использован Gunicorn
+# Инициализируем приложение
+initialize_app(DB_PATH, read_only=True)
+
+# Объект для Gunicorn
 application = app
