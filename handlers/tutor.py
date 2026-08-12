@@ -577,9 +577,9 @@ async def handle_student_click(callback: types.CallbackQuery, state: FSMContext)
         # Формируем полную информацию об ученике
         info_text = (
             f"📋 **Информация об ученике**\n\n"
-            f"👤 {student.student_name or 'Не указано'} '('{student.first_name or student.username}')' {'М' if student.gender == 'Мужской' else 'Ж'}\n"
-            f"⚧ **Пол:** {student.gender or 'Не указан'}\n"
-            f"📅 **Возраст:** {student.age or 'Не указан'} лет\n"
+            f"👤 {student.student_name or 'Не указано'} ({student.first_name or student.username or ''}) "
+            f"{'М' if student.gender == 'Мужской' else 'Ж'}\n"
+            f"{student.age or 'Не указан'} лет\n"
             f"📖 **Предмет:** {student.subject or 'Не указан'}\n"
             f"🆔 **ID:** {student.id}\n"
             f"📱 **Telegram:** {('@' + student.username) if student.username else 'Не подключён'}\n"
