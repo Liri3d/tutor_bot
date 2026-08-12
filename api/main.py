@@ -205,7 +205,6 @@ app.add_middleware(
 
 SQLITE_WEB_PORT = 8080
 
-# Прокси для статики - ДОЛЖЕН БЫТЬ ПЕРВЫМ!
 @app.api_route("/static/{path:path}", methods=["GET", "HEAD"])
 async def proxy_static(request: Request, path: str):
     """Проксирует запросы к статическим файлам sqlite-web"""
@@ -224,7 +223,7 @@ async def proxy_static(request: Request, path: str):
         except Exception as e:
             return Response(f"Ошибка прокси статики: {e}", status_code=500)
 
-# Прокси для всех запросов к sqlite-web
+# Прокси для корня sqlite-web и всех его страниц
 @app.api_route("/sqlite-web/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "HEAD"])
 async def proxy_sqlite_all(request: Request, path: str):
     """Проксирует ВСЕ запросы к sqlite-web"""
@@ -270,47 +269,29 @@ async def proxy_sqlite_root_slash():
     """Корень sqlite-web"""
     return await proxy_sqlite_all(Request(scope={"type": "http", "method": "GET"}), "")
 
-# Прокси для /query/
-@app.api_route("/query/{path:path}", methods=["GET", "POST"])
-async def proxy_query(request: Request, path: str):
-    """Проксирует запросы к /query/"""
-    url = f"http://localhost:{SQLITE_WEB_PORT}/query/{path}"
+# Прокси для прямых запросов к таблицам (без префикса)
+# Это перехватывает запросы вида /tutors/, /invites/ и т.д.
+@app.api_route("/{table_name}/", methods=["GET", "POST"])
+async def proxy_table(request: Request, table_name: str):
+    """Проксирует запросы к таблицам sqlite-web"""
+    # Проверяем, есть ли такой эндпоинт в нашем приложении
+    # Если нет — проксируем к sqlite-web
+    url = f"http://localhost:{SQLITE_WEB_PORT}/{table_name}/"
     if request.query_params:
         url += f"?{request.query_params}"
-    
-    body = await request.body()
     
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             response = await client.request(
                 method=request.method,
                 url=url,
-                headers=dict(request.headers),
-                content=body if body else None
+                headers=dict(request.headers)
             )
             return Response(
                 content=response.content,
                 status_code=response.status_code,
                 headers=dict(response.headers)
             )
-        except Exception as e:
-            return Response(f"Ошибка прокси: {e}", status_code=500)
-
-# Прокси для /download/
-@app.api_route("/download/{path:path}", methods=["GET"])
-async def proxy_download(request: Request, path: str):
-    """Проксирует запросы к /download/"""
-    url = f"http://localhost:{SQLITE_WEB_PORT}/download/{path}"
-    if request.query_params:
-        url += f"?{request.query_params}"
-    
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            response = await client.get(url, headers=dict(request.headers))
-            return Response(
-                content=response.content,
-                status_code=response.status_code,
-                headers=dict(response.headers)
-            )
-        except Exception as e:
-            return Response(f"Ошибка прокси: {e}", status_code=500)
+        except Exception:
+            # Если не получилось — возвращаем 404
+            return Response("Not Found", status_code=404)

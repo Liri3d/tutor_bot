@@ -35,7 +35,6 @@ def run_sqlite_web():
             "--host", "0.0.0.0",
             "--port", "8080",
             "--read-only",
-            "--url-prefix", "/sqlite-web",
             db_path
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
