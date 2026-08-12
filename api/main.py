@@ -269,6 +269,58 @@ async def proxy_sqlite_root_slash():
     """Корень sqlite-web"""
     return await proxy_sqlite_all(Request(scope={"type": "http", "method": "GET"}), "")
 
+# Прокси для content/ (пагинация)
+@app.api_route("/{table_name}/content/", methods=["GET", "POST"])
+async def proxy_table_content(request: Request, table_name: str):
+    """Проксирует запросы к content/ (пагинация)"""
+    url = f"http://localhost:{SQLITE_WEB_PORT}/{table_name}/content/"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    
+    body = await request.body()
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=dict(request.headers),
+                content=body if body else None
+            )
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+        except Exception as e:
+            return Response(f"Ошибка прокси: {e}", status_code=500)
+
+# Прокси для query/ (поиск, сортировка)
+@app.api_route("/{table_name}/query/", methods=["GET", "POST"])
+async def proxy_table_query(request: Request, table_name: str):
+    """Проксирует запросы к query/ (поиск, сортировка)"""
+    url = f"http://localhost:{SQLITE_WEB_PORT}/{table_name}/query/"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    
+    body = await request.body()
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=dict(request.headers),
+                content=body if body else None
+            )
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+        except Exception as e:
+            return Response(f"Ошибка прокси: {e}", status_code=500)
+        
 # Прокси для прямых запросов к таблицам (без префикса)
 # Это перехватывает запросы вида /tutors/, /invites/ и т.д.
 @app.api_route("/{table_name}/", methods=["GET", "POST"])
