@@ -12,3 +12,4 @@ passlib[bcrypt]==1.7.4
 PyJWT==2.10.1
 gunicorn
 sqlite_web
+httpx

@@ -1,11 +1,12 @@
 # api/main.py
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
+import httpx
 
 from config import BOT_ID, BOT_USERNAME, ENVIRONMENT
 
@@ -198,3 +199,55 @@ async def login(
 #         "name": current_user.get("name"),
 #         "role": current_user.get("role")
 #     }
+
+
+
+
+
+
+
+
+
+
+
+SQLITE_WEB_PORT = 8080
+
+@app.get("/sqlite-web/{path:path}")
+async def proxy_sqlite(request: Request, path: str):
+    """Проксирует запросы к sqlite-web"""
+    url = f"http://localhost:{SQLITE_WEB_PORT}/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=dict(request.headers),
+                content=await request.body()
+            )
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+        except Exception as e:
+            return Response(f"Ошибка прокси: {e}", status_code=500)
+
+@app.get("/sqlite-web")
+async def proxy_sqlite_root():
+    """Перенаправление на корень sqlite-web"""
+    # Создаём заглушку запроса
+    from fastapi import Request
+    scope = {"type": "http", "method": "GET"}
+    request = Request(scope)
+    return await proxy_sqlite(request, "")
+
+@app.get("/sqlite-web/")
+async def proxy_sqlite_root_slash():
+    """Перенаправление на корень sqlite-web с /"""
+    from fastapi import Request
+    scope = {"type": "http", "method": "GET"}
+    request = Request(scope)
+    return await proxy_sqlite(request, "")

@@ -73,7 +73,7 @@ async def main():
 
     run_sqlite_web()
     
-    await asyncio.gather(run_bot()) # run_api()
+    await asyncio.gather(run_bot(), run_api()) 
 
 if __name__ == "__main__":
     asyncio.run(main())
