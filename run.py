@@ -17,18 +17,33 @@ logging.basicConfig(level=logging.INFO)
 RUN_FRONTEND = os.getenv("RUN_FRONTEND", "true").lower() == "true"
 
 def run_sqlite_web():
-    """Запуск sqlite-web в отдельном потоке"""
+    """Запуск sqlite-web в фоновом режиме"""
     try:
-        # Используем тот же порт, что и основной сервер? Нет, нужен другой порт!
-        # Но на Amvera только один порт доступен снаружи...
-        # Поэтому используем внутренний порт 8080
-        subprocess.Popen([
-            "gunicorn", "wsgi_sqlite:application",
-            "--bind", "0.0.0.0:8080"
-        ])
-        print("📊 sqlite-web запущен на порту 8080 (внутренний)")
+        db_path = '/data/tutor_bot.db'
+        
+        # Проверяем базу данных
+        if not os.path.exists(db_path):
+            print(f"⚠️ База данных не найдена: {db_path}")
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            conn.close()
+            print(f"✅ Создана пустая база: {db_path}")
+        
+        # Запускаем sqlite-web на порту 8080 (внутренний)
+        process = subprocess.Popen([
+            "sqlite_web",
+            "--host", "0.0.0.0",
+            "--port", "8080",
+            "--read-only",
+            db_path
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        print(f"📊 sqlite-web запущен на порту 8080 (внутренний)")
+        print(f"🔒 Режим: только для чтения")
+        return process
     except Exception as e:
-        print(f"⚠️ Не удалось запустить sqlite-web: {e}")
+        print(f"❌ Ошибка запуска sqlite-web: {e}")
+        return None
 
 async def run_bot():
     """Запуск бота"""
