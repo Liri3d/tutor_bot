@@ -6,8 +6,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
-from sqlalchemy import create_engine 
-from sqlite_webpanel import SQLitePanel 
 
 from config import BOT_ID, BOT_USERNAME, ENVIRONMENT
 
@@ -45,18 +43,6 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # print(f"🔐 JWT_SECRET_KEY configured: {'yes' if JWT_SECRET_KEY else 'no'}")
 # print(f"🌐 CORS origins: {allowed_origins}")
 # print(f"🔧 Environment: {ENVIRONMENT}")
-
-
-
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./tutor_bot.db")
-sync_engine = create_engine(DATABASE_URL)
-
-panel = SQLitePanel(
-    app,                # Ваше FastAPI приложение
-    engine=sync_engine, # Синхронный движок
-    path="/admin-panel" # Адрес, по которому будет доступна панель
-)
 
 
 # ===== СТРАНИЦЫ =====
@@ -151,51 +137,51 @@ async def register(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-# @app.post("/api/auth/login", response_model=LoginResponse)
-# async def login(
-#     request: LoginRequest,
-#     session: AsyncSession = Depends(SessionService.get_session)
-# ):
-#     """
-#     Вход репетитора. Возвращает JWT access токен.
+@app.post("/api/auth/login", response_model=LoginResponse)
+async def login(
+    request: LoginRequest,
+    session: AsyncSession = Depends(SessionService.get_session)
+):
+    """
+    Вход репетитора. Возвращает JWT access токен.
     
-#     Args:
-#         login: Логин репетитора
-#         password: Пароль
+    Args:
+        login: Логин репетитора
+        password: Пароль
         
-#     Returns:
-#         JWT токен для последующих запросов
-#     """
-#     try:
-#         tutor = await AuthService.login_tutor(
-#             session=session,
-#             login=request.login,
-#             password=request.password
-#         )
+    Returns:
+        JWT токен для последующих запросов
+    """
+    try:
+        tutor = await AuthService.login_tutor(
+            session=session,
+            login=request.login,
+            password=request.password
+        )
         
-#         # Создаём JWT токен
-#         access_token = create_access_token(
-#             data={
-#                 "sub": str(tutor.id),
-#                 "role": "tutor",
-#                 "login": tutor.login,
-#                 "name": tutor.name
-#             }
-#         )
+        # Создаём JWT токен
+        access_token = create_access_token(
+            data={
+                "sub": str(tutor.id),
+                "role": "tutor",
+                "login": tutor.login,
+                "name": tutor.name
+            }
+        )
         
-#         return LoginResponse(
-#             access_token=access_token,
-#             user_id=tutor.id,
-#             login=tutor.login,
-#             name=tutor.name,
-#             role="tutor"
-#         )
+        return LoginResponse(
+            access_token=access_token,
+            user_id=tutor.id,
+            login=tutor.login,
+            name=tutor.name,
+            role="tutor"
+        )
         
-#     except ValueError as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail=str(e)
-#         )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
 
 
 # ===== ЗАЩИЩЁННЫЕ ЭНДПОИНТЫ (примеры) =====

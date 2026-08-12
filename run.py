@@ -41,7 +41,7 @@ async def run_api():
     
 async def main():
     await SessionService.init_db()
-    await asyncio.gather(run_bot(), run_api())
+    await asyncio.gather(run_bot()) # run_api()
 
 if __name__ == "__main__":
     asyncio.run(main())
