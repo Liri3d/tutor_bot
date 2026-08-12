@@ -37,14 +37,8 @@ app.add_middleware(
 )
 
 # Статические файлы
-static_dir = os.path.join(os.path.dirname(__file__), "..", "web")
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-# # Логирование при запуске
-# print(f"🔐 JWT_SECRET_KEY configured: {'yes' if JWT_SECRET_KEY else 'no'}")
-# print(f"🌐 CORS origins: {allowed_origins}")
-# print(f"🔧 Environment: {ENVIRONMENT}")
-
+# static_dir = os.path.join(os.path.dirname(__file__), "..", "web")
+# app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # ===== СТРАНИЦЫ =====
 
