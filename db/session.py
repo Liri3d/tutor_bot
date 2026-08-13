@@ -2,6 +2,8 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
+from typing import AsyncGenerator
+
 from .models import Base
 
 # Берём путь к БД из .env или используем по умолчанию
@@ -22,13 +24,13 @@ async_session = async_sessionmaker(
     autoflush=False,
 )
 
-async def init_db():
+async def db_init_db():
     """Создаёт все таблицы, если их ещё нет"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("✅ База данных инициализирована")
 
-async def get_session() -> AsyncSession:
+async def db_get_session() -> AsyncGenerator[AsyncSession, None]:
     """Возвращает сессию для работы с БД"""
     async with async_session() as session:
         yield session

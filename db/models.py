@@ -1,87 +1,82 @@
+# db/models.py
 from datetime import datetime, timedelta
-from sqlalchemy import BigInteger, String, DateTime, CheckConstraint, Boolean, ForeignKey
+from typing import Optional
+from sqlalchemy import String, DateTime, Boolean, ForeignKey, BigInteger, JSON, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
 
 class Base(DeclarativeBase):
     """Базовый класс для всех моделей"""
     pass
 
 
-class User(Base):
-    __tablename__ = "users"
+class Tutor(Base):
+    """Репетитор — регистрация через Telegram"""
+    __tablename__ = "tutors"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     username: Mapped[str] = mapped_column(String(255), nullable=True)
-    first_name: Mapped[str] = mapped_column(String(255), nullable=True)
-    role: Mapped[str] = mapped_column(
-        String(20),
-        CheckConstraint("role IN ('tutor', 'student')"),
-        nullable=False
+    first_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=False)
+    registered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+     
+    # Связи
+    students: Mapped[list["Student"]] = relationship(
+        "Student",
+        secondary="tutor_student_links",
+        back_populates="tutors"
     )
-    registered_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.now
-    )
-    invites: Mapped[list["Invite"]] = relationship("Invite", back_populates="tutor")
-    relationships_as_tutor: Mapped[list["Relationship"]] = relationship(
-        "Relationship",
-        foreign_keys="Relationship.tutor_id",
+    invites: Mapped[list["Invite"]] = relationship(
+        "Invite",
+        foreign_keys="Invite.tutor_id",
         back_populates="tutor"
     )
-    relationships_as_student: Mapped[list["Relationship"]] = relationship(
-        "Relationship",
-        foreign_keys="Relationship.student_id",
-        back_populates="student"
+   
+    def __repr__(self):
+        return f"<Tutor(id={self.id}, username={self.username}, first_name={self.first_name})>"
+
+
+class Student(Base):
+    """Ученик — регистрация через Telegram"""
+    __tablename__ = "students"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    telegram_id: Mapped[Optional[str]] = mapped_column(BigInteger, unique=True, nullable=True)
+    username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    first_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    student_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    gender: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    age: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    subject: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    registered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    
+    # Связи
+    tutors: Mapped[list["Tutor"]] = relationship(
+        "Tutor",
+        secondary="tutor_student_links",
+        back_populates="students"
     )
 
     def __repr__(self):
-        return f"<User(telegram_id={self.telegram_id}, role={self.role})>"
+        return f"<Student(id={self.id}, first_name={self.first_name}, telegram_id={self.telegram_id})>"
 
 
-class Invite(Base):
-    """Модель приглашения"""
-    __tablename__ = "invites"
+class TutorStudentLink(Base):
+    """Связь репетитор-ученик (многие-ко-многим)"""
+    __tablename__ = "tutor_student_links"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     tutor_id: Mapped[int] = mapped_column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    student_name: Mapped[str] = mapped_column(String(255), nullable=False)  # Имя ученика
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    is_used: Mapped[bool] = mapped_column(Boolean, default=False)
-    used_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-
-    # Связь с репетитором
-    tutor: Mapped["User"] = relationship("User", back_populates="invites")
-
-    def __repr__(self):
-        return f"<Invite(code={self.code}, tutor_id={self.tutor_id}, is_used={self.is_used})>"
-
-
-class Relationship(Base):
-    """Связь между репетитором и учеником"""
-    __tablename__ = "relationships"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tutor_id: Mapped[int] = mapped_column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        ForeignKey("tutors.id", ondelete="CASCADE"),
+        primary_key=True
     )
     student_id: Mapped[int] = mapped_column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        ForeignKey("students.id", ondelete="CASCADE"),
+        primary_key=True
     )
     status: Mapped[str] = mapped_column(
         String(20),
-        CheckConstraint("status IN ('active', 'paused', 'inactive')"),
-        default="active"
+        default="active"  # active, paused, inactive
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(
@@ -90,17 +85,65 @@ class Relationship(Base):
         onupdate=datetime.now
     )
 
-    # Связи
-    tutor: Mapped["User"] = relationship(
-        "User",
-        foreign_keys=[tutor_id],
-        back_populates="relationships_as_tutor"
+    def __repr__(self):
+        return f"<Link(tutor={self.tutor_id}, student={self.student_id}, status={self.status})>"
+
+
+class Invite(Base):
+    """Приглашение для ученика"""
+    __tablename__ = "invites"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    tutor_id: Mapped[int] = mapped_column(
+        ForeignKey("tutors.id", ondelete="CASCADE"),
+        nullable=False
     )
-    student: Mapped["User"] = relationship(
-        "User",
-        foreign_keys=[student_id],
-        back_populates="relationships_as_student"
+    student_name: Mapped[str] = mapped_column(String(255), nullable=False)  # имя, которое указал репетитор
+    is_used: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now() + timedelta(days=7)
     )
+        
+    tutor: Mapped["Tutor"] = relationship("Tutor", back_populates="invites")
 
     def __repr__(self):
-        return f"<Relationship(tutor_id={self.tutor_id}, student_id={self.student_id}, status={self.status})>"
+        return f"<Invite(code={self.code}, tutor_id={self.tutor_id}, used={self.is_used})>"
+
+class Lesson(Base):
+    """Занятие репетитора с учеником"""
+    __tablename__ = "lessons"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    tutor_id: Mapped[int] = mapped_column(
+        ForeignKey("tutors.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    duration_minutes: Mapped[int] = mapped_column(nullable=False, default=60)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="scheduled"
+        # scheduled, completed, cancelled, missed
+    )
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now
+    )
+    
+    # Связи
+    tutor: Mapped["Tutor"] = relationship("Tutor", backref="lessons")
+    student: Mapped["Student"] = relationship("Student", backref="lessons")
+
+    def __repr__(self):
+        return f"<Lesson(id={self.id}, start_time={self.start_time}, status={self.status})>"
