@@ -16,8 +16,8 @@ from .tutor_kb import (
 )
 
 
-# from .setting_kb import settings_menu, confirm_change_role_menu
-# from .stud_kb import student_menu_keyboard
+from .setting_kb import settings_menu, confirm_change_role_menu
+from .stud_kb import student_menu_keyboard
 
 __all__ = [
     'start_menu_keyboard',

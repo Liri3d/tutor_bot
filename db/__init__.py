@@ -3,7 +3,7 @@ from .models import Base, Tutor, Student, Invite, TutorStudentLink, Lesson
 from .tutor_crud import tutor_crud
 from .student_crud import student_crud
 from .link_crud import link_crud
-# from .invite_crud import invite_crud
+from .invite_crud import invite_crud
 from .lesson_crud import lesson_crud
 
 __all__ = [
