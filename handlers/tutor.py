@@ -1,6 +1,6 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from keyboards import (
     settings_menu,
@@ -10,7 +10,9 @@ from keyboards import (
     student_detail_menu,
 
     date_range_keyboard,
-    time_range_keyboard
+    time_range_keyboard,
+
+    tutor_shedule_keyboard
 )
 
 from db import Tutor, tutor_crud, student_crud, link_crud, lesson_crud 
@@ -730,24 +732,10 @@ async def handle_tutor_schedule(callback: types.CallbackQuery, state: FSMContext
                     text += f" ({lesson.title})"
                 text += f" [ID: {lesson.id}]\n"
         
-        # Клавиатура для управления расписанием
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(
-                    text="📋 Все занятия",
-                    callback_data="tutor_all_lessons"
-                )],
-                [InlineKeyboardButton(
-                    text="🔙 Назад",
-                    callback_data="back_to_main"
-                )],
-            ]
-        )
-        
         await callback.message.edit_text(
             text,
             parse_mode="Markdown",
-            reply_markup=keyboard
+            reply_markup=tutor_shedule_keyboard()
         )
 
 

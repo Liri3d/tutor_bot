@@ -17,6 +17,21 @@ def tutor_menu_keyboard() -> InlineKeyboardMarkup:
         ]
     )
 
+def tutor_shedule_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text="📋 Все занятия",
+                callback_data="tutor_all_lessons"
+            )],
+            [InlineKeyboardButton(
+                text="🔙 Назад",
+                callback_data="back_to_main"
+            )],
+        ]
+    )
+    
+
 def date_range_keyboard() -> InlineKeyboardMarkup:
     """
     Создаёт inline-клавиатуру с датами на 14 дней вперед.
