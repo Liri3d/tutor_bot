@@ -21,7 +21,7 @@ class TutorCRUD(BaseCRUD[Tutor]):
         self,
         session: AsyncSession,
         telegram_id: int,
-        username: str,
+        username: Optional[str] = None,
         first_name: Optional[str] = None,
     ) -> Tutor:
         tutor = Tutor(

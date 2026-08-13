@@ -13,7 +13,7 @@ class TutorStates(StatesGroup):
 
     # Состояния для создания занятия
     waiting_lesson_student = State()
-    waiting_lesson_date = State()
+    # waiting_lesson_date = State()
     # waiting_lesson_time = State()
     waiting_lesson_duration = State()
     waiting_lesson_title = State()

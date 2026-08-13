@@ -82,27 +82,33 @@ async def handle_lesson_student_select(callback: types.CallbackQuery, state: FSM
         await state.update_data(lesson_student_name=student_name)
         
         await callback.message.edit_text(
-            f"📅 **Шаг 2: Выберите дату занятия**\n\n"
-            f"👤 Ученик: {student_name}\n\n"
-            "❌ Для отмены введите /cancel",
-            parse_mode="Markdown"
-        )
-        await state.set_state(TutorStates.waiting_lesson_date)
-
-@tutor_router.message(TutorStates.waiting_lesson_date)
-async def handle_lesson_date(message: types.Message, state: FSMContext):
-    """
-    Шаг 2: Показываем выбор даты (только кнопки).
-    Если пользователь что-то пишет - напоминаем, что нужно выбрать кнопкой.
-    """
-    # Если пользователь что-то ввел текстом - игнорируем и напоминаем
-    if message.text:
-        await message.answer(
             "📅 **Пожалуйста, выберите дату из предложенных кнопок ниже.**\n\n"
             "❌ Для отмены нажмите /cancel",
             parse_mode="Markdown",
             reply_markup=date_range_keyboard()
+            
+            # f"📅 **Шаг 2: Выберите дату занятия**\n\n"
+            # f"👤 Ученик: {student_name}\n\n"
+            # "❌ Для отмены введите /cancel",
+            # parse_mode="Markdown"
         )
+
+        # await state.set_state(TutorStates.waiting_lesson_date)
+
+# @tutor_router.message(TutorStates.waiting_lesson_date)
+# async def handle_lesson_date(message: types.Message, state: FSMContext):
+#     """
+#     Шаг 2: Показываем выбор даты (только кнопки).
+#     Если пользователь что-то пишет - напоминаем, что нужно выбрать кнопкой.
+#     """
+#     # Если пользователь что-то ввел текстом - игнорируем и напоминаем
+#     if message.text:
+#         await message.answer(
+#             "📅 **Пожалуйста, выберите дату из предложенных кнопок ниже.**\n\n"
+#             "❌ Для отмены нажмите /cancel",
+#             parse_mode="Markdown",
+#             reply_markup=date_range_keyboard()
+#         )
 
 @tutor_router.callback_query(lambda c: c.data and c.data.startswith("date_"))
 async def handle_date_selection(callback: types.CallbackQuery, state: FSMContext):
@@ -257,6 +263,26 @@ async def handle_lesson_title(message: types.Message, state: FSMContext):
                 await message.answer("❌ Репетитор не найден.")
                 await state.clear()
                 return
+
+            # Перед созданием урока проверяем пересечения
+            existing_lessons = await lesson_crud.get_tutor_lessons(
+                session=session,
+                tutor_id=tutor_id,
+                start_date=start_time,
+                end_date=start_time + timedelta(minutes=60),
+                limit=10
+            )
+            if existing_lessons:
+                await message.answer(
+                    "❌ У вас уже есть занятие в это время!\n\n"
+                    "Пожалуйста, выберите другое время.",
+                    reply_markup=tutor_menu_keyboard()
+                )
+                await state.clear()
+                return
+
+
+
             
             # ===== СОЗДАЁМ УРОК! 🎉 =====
             lesson = await lesson_crud.create(

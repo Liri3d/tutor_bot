@@ -1,13 +1,16 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-def start_menu_keyboard() -> ReplyKeyboardMarkup:
-    """Клавиатура для неавторизованного пользователя - только кнопка Старт"""
+def main_menu_keyboard() -> ReplyKeyboardMarkup:
+    """
+    Единая клавиатура с кнопкой Меню для всех авторизованных пользователей.
+    role: 'tutor' или 'student'
+    """
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🚀 Старт")]
+            [KeyboardButton(text="📋 Меню")],  # ← всегда одна кнопка
         ],
-        resize_keyboard=True,  # Автоматический размер
-        one_time_keyboard=False  # Клавиатура остаётся после нажатия
+        resize_keyboard=True,
+        one_time_keyboard=False
     )
 
 def role_keyboard():

@@ -21,7 +21,7 @@ class StudentCRUD(BaseCRUD[Student]):
         self,
         session: AsyncSession,
         student_name: str,
-        telegram_id: Optional[str] = None,
+        telegram_id: Optional[int] = None,
         username: Optional[str] = None,
         first_name: Optional[str] = None,
         gender: Optional[str] = None,
