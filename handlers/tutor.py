@@ -529,8 +529,6 @@ async def handle_cancel_action(callback: types.CallbackQuery, state: FSMContext)
         reply_markup=tutor_menu_keyboard()
     )
 
-
-
 @tutor_router.callback_query(lambda c: c.data == "tutor_students")
 async def handle_tutor_students(callback: types.CallbackQuery, state: FSMContext):
     """Репетитор хочет просмотреть список учеников"""
@@ -649,5 +647,154 @@ async def _show_students_list(
         
         await message_or_callback.message.edit_text(
             text=empty_text,
+            reply_markup=tutor_menu_keyboard()
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+@tutor_router.callback_query(lambda c: c.data == "tutor_schedule")
+async def handle_tutor_schedule(callback: types.CallbackQuery, state: FSMContext):
+    """
+    Показать расписание репетитора.
+    """
+    await callback.answer()
+    await state.clear()
+    
+    async for session in SessionService.get_session():
+        # Проверяем, что пользователь - репетитор
+        tutor = await tutor_crud.get_by_telegram_id(session, callback.from_user.id)
+        if not tutor:
+            await callback.message.edit_text(
+                "❌ Вы не зарегистрированы как репетитор.\n"
+                "Нажмите /start для регистрации."
+            )
+            return
+        
+        # Получаем занятия на ближайшие 7 дней
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        week_later = today + timedelta(days=7)
+        
+        lessons = await LessonService.get_tutor_lessons(
+            session=session,
+            tutor_id=tutor.id,
+            start_date=today,
+            end_date=week_later,
+            status="scheduled",
+            limit=50
+        )
+        
+        if not lessons:
+            await callback.message.edit_text(
+                "📅 У вас нет запланированных занятий на ближайшую неделю.\n\n"
+                "Нажмите ➕ Добавить занятие, чтобы создать новое.",
+                reply_markup=tutor_menu_keyboard()
+            )
+            return
+        
+        # Формируем сообщение с расписанием
+        text = "📅 **Ваше расписание на неделю:**\n\n"
+        
+        # Группируем занятия по дням
+        from collections import defaultdict
+        lessons_by_day = defaultdict(list)
+        for lesson in lessons:
+            day_key = lesson.start_time.strftime("%d.%m.%Y")
+            lessons_by_day[day_key].append(lesson)
+        
+        # Выводим занятия по дням
+        for day_key in sorted(lessons_by_day.keys()):
+            day_lessons = lessons_by_day[day_key]
+            # Название дня недели
+            day_date = datetime.strptime(day_key, "%d.%m.%Y")
+            weekday = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][day_date.weekday()]
+            text += f"\n📌 *{day_key} ({weekday})*\n"
+            
+            for lesson in day_lessons:
+                # Получаем имя ученика
+                student = await student_crud.get_by_id(session, lesson.student_id)
+                student_name = student.student_name or student.first_name or "Ученик"
+                
+                time_str = lesson.start_time.strftime("%H:%M")
+                text += f"   ⏰ {time_str} - {student_name}"
+                if lesson.title:
+                    text += f" ({lesson.title})"
+                text += f" [ID: {lesson.id}]\n"
+        
+        # Клавиатура для управления расписанием
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="📋 Все занятия",
+                    callback_data="tutor_all_lessons"
+                )],
+                [InlineKeyboardButton(
+                    text="🔙 Назад",
+                    callback_data="back_to_main"
+                )],
+            ]
+        )
+        
+        await callback.message.edit_text(
+            text,
+            parse_mode="Markdown",
+            reply_markup=keyboard
+        )
+
+
+@tutor_router.callback_query(lambda c: c.data == "tutor_all_lessons")
+async def handle_tutor_all_lessons(callback: types.CallbackQuery, state: FSMContext):
+    """
+    Показать все занятия репетитора (без фильтра по дате).
+    """
+    await callback.answer()
+    await state.clear()
+    
+    async for session in SessionService.get_session():
+        tutor = await tutor_crud.get_by_telegram_id(session, callback.from_user.id)
+        if not tutor:
+            await callback.message.edit_text("❌ Вы не репетитор.")
+            return
+        
+        # Получаем все активные занятия
+        lessons = await LessonService.get_tutor_lessons(
+            session=session,
+            tutor_id=tutor.id,
+            status="scheduled",
+            limit=50
+        )
+        
+        if not lessons:
+            await callback.message.edit_text(
+                "📅 У вас нет запланированных занятий.",
+                reply_markup=tutor_menu_keyboard()
+            )
+            return
+        
+        text = "📋 **Все запланированные занятия:**\n\n"
+        for idx, lesson in enumerate(lessons[:20], 1):
+            student = await student_crud.get_by_id(session, lesson.student_id)
+            student_name = student.student_name or student.first_name or "Ученик"
+            date_str = lesson.start_time.strftime("%d.%m.%Y %H:%M")
+            text += f"{idx}. {date_str} - {student_name}"
+            if lesson.title:
+                text += f" ({lesson.title})"
+            text += f"\n"
+        
+        if len(lessons) > 20:
+            text += f"\n... и ещё {len(lessons) - 20} занятий"
+        
+        await callback.message.edit_text(
+            text,
+            parse_mode="Markdown",
             reply_markup=tutor_menu_keyboard()
         )

@@ -8,9 +8,9 @@ def tutor_menu_keyboard() -> InlineKeyboardMarkup:
     """Главное меню репетитора"""
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            # [InlineKeyboardButton(text="📅 Моё расписание", callback_data="tutor_schedule")],
-            [InlineKeyboardButton(text="👥 Мои ученики", callback_data="tutor_students")],
+            [InlineKeyboardButton(text="📅 Моё расписание", callback_data="tutor_schedule")],
             [InlineKeyboardButton(text="➕ Добавить занятие", callback_data="tutor_add_lesson")],
+            [InlineKeyboardButton(text="👥 Мои ученики", callback_data="tutor_students")],
             [InlineKeyboardButton(text="➕ Добавить ученика", callback_data="tutor_add_student")],
             # [InlineKeyboardButton(text="🔗 Пригласить ученика", callback_data="tutor_invite")],
             # [InlineKeyboardButton(text="⚙️ Настройки", callback_data="settings_menu")],

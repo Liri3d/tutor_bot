@@ -50,4 +50,38 @@ class LessonCRUD(BaseCRUD[Lesson]):
             return True
         return False
 
+    async def get_tutor_lessons(
+        self,
+        session: AsyncSession,
+        tutor_id: int,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        status: Optional[str] = None,
+        limit: int = 50
+    ) -> List[Lesson]:
+        """
+        Получить занятия репетитора с фильтрацией.
+        
+        Args:
+            session: Сессия БД
+            tutor_id: ID репетитора
+            start_date: Начальная дата (опционально)
+            end_date: Конечная дата (опционально)
+            status: Статус занятия (опционально)
+            limit: Максимальное количество занятий
+        """
+        stmt = select(Lesson).where(Lesson.tutor_id == tutor_id)
+        
+        if start_date:
+            stmt = stmt.where(Lesson.start_time >= start_date)
+        if end_date:
+            stmt = stmt.where(Lesson.start_time <= end_date)
+        if status:
+            stmt = stmt.where(Lesson.status == status)
+        
+        stmt = stmt.order_by(Lesson.start_time).limit(limit)
+        result = await session.execute(stmt)
+
+        return result.scalars().all()
+
 lesson_crud = LessonCRUD()
